@@ -91,7 +91,27 @@ def next_out_path(char_key: str, sheet: str) -> Path:
     return d / f"{char_key}_{sheet}_v{n}.png"
 
 
+def load_dotenv() -> None:
+    """Load KEY=VALUE lines from a .env file (repo root or _tools) into os.environ.
+
+    Existing environment variables take precedence. No third-party dependency needed.
+    """
+    for env_path in (ROOT.parent / ".env", Path(__file__).parent / ".env"):
+        if not env_path.is_file():
+            continue
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+        return
+
+
 def generate(char_key: str, sheet: str) -> Path:
+    load_dotenv()
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         sys.exit("OPENROUTER_API_KEY not set")
