@@ -77,6 +77,19 @@
           "desc": "A soft cream-coloured plush bunny doll about the size of the character's head: long floppy ears that hang down, a round chubby body, short stubby arms and legs, small stitched black bead eyes, a tiny pink embroidered nose, soft blush cheeks, and a dusty-pink ribbon bow tied around its neck. Felted-wool / fleece plush texture with visible fibres, slightly worn and well-loved."
         }
       ]
+    },
+    "Liiie-infj": {
+      "name": "Liiie",
+      "mbti": "INFJ",
+      "description": "An elegant, doll-like chibi girl. Very long, voluminous wavy raspberry-magenta yarn hair reaching below the knees, with a small braid section on the right side, a deep-red felt rose hair ornament with a pearl chain and a tiny gold gem drop on the right side of her head, and a wine-red ribbon bow at the back. Large round rose-pink eyes with a magenta gradient and layered highlights, gentle slightly-worried thin eyebrows, soft blush, small closed mouth. Outfit: a wine-red / raspberry lolita-style dress with a white lace-trimmed high collar, a large wine-red bow at the neck with a pearl-and-ruby brooch, puffed long sleeves with white lace cuffs and pearl bracelets, a short wine-red capelet with cream fleece trim and embroidered rose motifs; a full tiered skirt with white lace ruffles and cream petticoat, decorated with small felt roses, pearls and wine-red bows; white knit tights with small bows; wine-red Mary-Jane heels with rose and bow details.",
+      "props": "deep-red felt rose hair ornament with pearl chain; wine-red quilted handbag with a bow, ruby-and-pearl brooch and a pearl-bead handle"
+    },
+    "QC-entp": {
+      "name": "QC",
+      "mbti": "ENTP",
+      "description": "A laid-back, cool chibi boy on holiday. Thick, tousled indigo-blue yarn hair swept back with loose strands falling over the forehead. Large sharp deep-blue eyes with white highlights, one eyebrow slightly raised, a small confident smirk, light tan skin. Wears black rectangular sunglasses pushed down to the tip of the nose so both eyes show above the frames. Outfit: an open short-sleeved navy-blue Hawaiian shirt with white palm-tree and wave prints and rolled cuffs, bare chest showing; matching navy board shorts with white drawstring and palm-tree print; a silver chain necklace with a small white seashell pendant; a white-and-blue bead bracelet with a tiny shell on the right wrist; navy strap sandals with white soles.",
+      "props": "black rectangular sunglasses worn low on the nose; silver seashell necklace; blue-and-white bead bracelet; tall glass of iced orange drink with an orange slice, mint leaves and a black straw",
+      "turnaround_note": "Keep the sunglasses pushed down low on the nose in every view so the eyes are visible above them. Do NOT include the drink glass; hands empty."
     }
   }
 }
