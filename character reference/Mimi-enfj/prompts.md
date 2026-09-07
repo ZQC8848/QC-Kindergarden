@@ -25,3 +25,15 @@ CHARACTER: Mimi (ENFJ). A bold, confident chibi girl. Deep violet-purple spiky h
 
 STYLE: 3D-rendered chibi figurine in the style of a felted-wool / knitted-yarn collectible toy. Hair and clothing show visible soft fibre and knit texture; skin is smooth matte vinyl with soft blush; eyes are large glossy anime-style with layered highlights and a gradient iris. Proportions about 2.5 heads tall, big round head, tiny body, stubby limbs. Soft even studio lighting, no rim light, no bokeh. PURE WHITE background, no floor shadow, no environment, no text, no watermark.
 ```
+
+## Prop prompt: baseball_bat
+
+```
+PROP REFERENCE SHEET. One wide image showing a SINGLE object only, no character, no hands, no body parts. Show the same object three times side by side in one row, left to right: (1) front view, (2) three-quarter view, (3) exact side view. All three are the same size, evenly spaced, sharing one baseline. Plain PURE WHITE background, no floor shadow, no labels, no text. The attached image is the character who owns this object: use it ONLY to match colours, materials and toy style. Do NOT draw the character.
+
+OBJECT: A chibi-scale baseball bat: glossy silver metallic barrel, a deep violet-purple rubber wrapped grip with a small round knob at the end, and two thin purple stripes near the top of the barrel, plus a tiny white star mark on the barrel. Purple must match the character's jacket and hair.
+
+OWNER (for colour/material reference only): Mimi (ENFJ).
+
+STYLE: 3D-rendered chibi figurine in the style of a felted-wool / knitted-yarn collectible toy. Hair and clothing show visible soft fibre and knit texture; skin is smooth matte vinyl with soft blush; eyes are large glossy anime-style with layered highlights and a gradient iris. Proportions about 2.5 heads tall, big round head, tiny body, stubby limbs. Soft even studio lighting, no rim light, no bokeh. PURE WHITE background, no floor shadow, no environment, no text, no watermark.
+```

@@ -5,6 +5,7 @@ Usage:
   python gen_reference.py FUFU-enfp turnaround       # generate one sheet
   python gen_reference.py FUFU-enfp expressions
   python gen_reference.py FUFU-enfp all
+  python gen_reference.py Mimi-enfj prop            # generate every prop in that character's prop_items
 
 Env: OPENROUTER_API_KEY must be set. Never hard-code the key in this file.
 """
@@ -72,6 +73,15 @@ def write_prompts() -> None:
             "```",
             "",
         ]
+        for it in c.get("prop_items") or []:
+            md += [
+                f"## Prop prompt: {it['key']}",
+                "",
+                "```",
+                build_prop_prompt(key, it),
+                "```",
+                "",
+            ]
         (folder / "prompts.md").write_text("\n".join(md), encoding="utf-8")
         print("wrote", folder / "prompts.md")
 
@@ -110,16 +120,50 @@ def load_dotenv() -> None:
         return
 
 
+def build_prop_prompt(char_key: str, item: dict) -> str:
+    c = CFG["characters"][char_key]
+    return "\n".join([
+        CFG["prop"],
+        "",
+        "OBJECT: " + item["desc"],
+        "",
+        "OWNER (for colour/material reference only): " + c["name"] + " (" + c["mbti"] + ").",
+        "",
+        "STYLE: " + CFG["style"],
+    ])
+
+
+def next_prop_path(char_key: str, item_key: str) -> Path:
+    d = ROOT / char_key / "props"
+    d.mkdir(parents=True, exist_ok=True)
+    n = 1
+    while (d / f"{char_key}_prop_{item_key}_v{n}.png").exists():
+        n += 1
+    return d / f"{char_key}_prop_{item_key}_v{n}.png"
+
+
 def generate(char_key: str, sheet: str) -> Path:
+    return _generate_image(char_key, build_prompt(char_key, sheet),
+                           SHEETS[sheet]["aspect"], next_out_path(char_key, sheet))
+
+
+def generate_props(char_key: str) -> list:
+    items = CFG["characters"][char_key].get("prop_items") or []
+    if not items:
+        sys.exit(f"no prop_items defined for {char_key} in characters.json")
+    return [_generate_image(char_key, build_prop_prompt(char_key, it), "16:9",
+                            next_prop_path(char_key, it["key"])) for it in items]
+
+
+def _generate_image(char_key: str, prompt: str, aspect: str, out: Path) -> Path:
     load_dotenv()
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         sys.exit("OPENROUTER_API_KEY not set")
-    prompt = build_prompt(char_key, sheet)
     body = {
         "model": MODEL,
         "modalities": ["image", "text"],
-        "image_config": {"aspect_ratio": SHEETS[sheet]["aspect"], "image_size": "2K"},
+        "image_config": {"aspect_ratio": aspect, "image_size": "2K"},
         "messages": [
             {
                 "role": "user",
@@ -149,7 +193,6 @@ def generate(char_key: str, sheet: str) -> Path:
         raw = base64.b64decode(url.split(",", 1)[1])
     else:
         raw = requests.get(url, timeout=120).content
-    out = next_out_path(char_key, sheet)
     out.write_bytes(raw)
     usage = data.get("usage", {})
     print(f"saved {out}  ({len(raw)//1024} KB, {time.time()-t0:.0f}s, usage={usage})")
@@ -161,7 +204,7 @@ def generate(char_key: str, sheet: str) -> Path:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("character", nargs="?")
-    ap.add_argument("sheet", nargs="?", choices=["turnaround", "expressions", "all"])
+    ap.add_argument("sheet", nargs="?", choices=["turnaround", "expressions", "all", "prop"])
     ap.add_argument("--write-prompts", action="store_true")
     a = ap.parse_args()
     if a.write_prompts:
@@ -169,6 +212,9 @@ if __name__ == "__main__":
     if a.character:
         if a.character not in CFG["characters"]:
             sys.exit("unknown character: " + a.character)
-        sheets = ["turnaround", "expressions"] if a.sheet in (None, "all") else [a.sheet]
-        for s in sheets:
-            generate(a.character, s)
+        if a.sheet == "prop":
+            generate_props(a.character)
+        else:
+            sheets = ["turnaround", "expressions"] if a.sheet in (None, "all") else [a.sheet]
+            for s in sheets:
+                generate(a.character, s)

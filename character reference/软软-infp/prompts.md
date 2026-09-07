@@ -25,3 +25,15 @@ CHARACTER: 软软 (INFP). A shy, tender chibi girl. Soft coral-pink fluffy yarn 
 
 STYLE: 3D-rendered chibi figurine in the style of a felted-wool / knitted-yarn collectible toy. Hair and clothing show visible soft fibre and knit texture; skin is smooth matte vinyl with soft blush; eyes are large glossy anime-style with layered highlights and a gradient iris. Proportions about 2.5 heads tall, big round head, tiny body, stubby limbs. Soft even studio lighting, no rim light, no bokeh. PURE WHITE background, no floor shadow, no environment, no text, no watermark.
 ```
+
+## Prop prompt: bunny_plush
+
+```
+PROP REFERENCE SHEET. One wide image showing a SINGLE object only, no character, no hands, no body parts. Show the same object three times side by side in one row, left to right: (1) front view, (2) three-quarter view, (3) exact side view. All three are the same size, evenly spaced, sharing one baseline. Plain PURE WHITE background, no floor shadow, no labels, no text. The attached image is the character who owns this object: use it ONLY to match colours, materials and toy style. Do NOT draw the character.
+
+OBJECT: A soft cream-coloured plush bunny doll about the size of the character's head: long floppy ears that hang down, a round chubby body, short stubby arms and legs, small stitched black bead eyes, a tiny pink embroidered nose, soft blush cheeks, and a dusty-pink ribbon bow tied around its neck. Felted-wool / fleece plush texture with visible fibres, slightly worn and well-loved.
+
+OWNER (for colour/material reference only): 软软 (INFP).
+
+STYLE: 3D-rendered chibi figurine in the style of a felted-wool / knitted-yarn collectible toy. Hair and clothing show visible soft fibre and knit texture; skin is smooth matte vinyl with soft blush; eyes are large glossy anime-style with layered highlights and a gradient iris. Proportions about 2.5 heads tall, big round head, tiny body, stubby limbs. Soft even studio lighting, no rim light, no bokeh. PURE WHITE background, no floor shadow, no environment, no text, no watermark.
+```
