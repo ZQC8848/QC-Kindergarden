@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/story_added.py\"",
+            "timeout": 10,
+            "statusMessage": "检查是否新增了故事"
+          }
+        ]
+      }
+    ]
+  }
+}
