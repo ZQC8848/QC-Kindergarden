@@ -7,15 +7,15 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "website" / "group-photo" / "work" / "identity-sheet.png"
 
 CHARACTERS = [
-    ("FUFU-enfp", "FUFU"),
-    ("haide-entp", "haide"),
+    ("Fufu-enfp", "Fufu"),
+    ("Haide-entp", "Haide"),
     ("Mimi-enfj", "Mimi"),
     ("艾莎-intj", "艾莎"),
     ("陆姚-entj", "陆姚"),
     ("软软-infp", "软软"),
     ("牧师-enfj", "牧师"),
-    ("whiskle-infp", "whiskle"),
-    ("lukos-infj", "lukos"),
+    ("Whiskle-infp", "Whiskle"),
+    ("Lukos-infj", "Lukos"),
     ("点儿-intp", "点儿"),
     ("Liiie-infj", "Liiie"),
     ("QC-entp", "QC"),

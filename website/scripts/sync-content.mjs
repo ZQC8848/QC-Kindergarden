@@ -48,6 +48,11 @@ function latestVersion(dir, prefix, suffixRe) {
   return hits.length ? path.join(dir, hits[0].f) : null;
 }
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const knownSlugs = new Set(characters.map((c) => c.slug));
+function resolveSlug(value) {
+  const raw = String(value).trim();
+  return knownSlugs.has(raw) ? raw : nameToSlug[raw] ?? nameToSlug[raw.toLowerCase()] ?? null;
+}
 
 // ---- bible parsing ----------------------------------------------------------
 
@@ -174,7 +179,22 @@ if (fs.existsSync(STORIES)) {
     const { data, content } = matter(raw);
     // strip the first H1 (title is rendered from frontmatter)
     const body = content.replace(/^\s*# .+\n/, '');
-    const cast = (data.cast ?? []).map((n) => nameToSlug[String(n)] ?? nameToSlug[String(n).toLowerCase()]).filter(Boolean);
+    const cast = (data.cast ?? []).map(resolveSlug).filter(Boolean);
+    const memories = Object.entries(data.memories ?? {})
+      .map(([name, value]) => {
+        const character = resolveSlug(name);
+        const memory = value && typeof value === 'object' ? value : {};
+        return character
+          ? {
+              character,
+              title: String(memory.title ?? ''),
+              knowledge: String(memory.knowledge ?? 'witnessed'),
+              summary: String(memory.summary ?? ''),
+              impact: memory.impact ? String(memory.impact) : null,
+            }
+          : null;
+      })
+      .filter(Boolean);
     const cover = latestVersion(path.join(STORIES, 'assets'), `${stem}-v`, '(\\d+)\\.png');
     if (cover) copyIfNewer(cover, path.join(outAssets, 'stories', `${stem}.png`));
     const excerpt = body
@@ -188,13 +208,20 @@ if (fs.existsSync(STORIES)) {
       location: data.location ?? null,
       date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : String(data.date ?? '').slice(0, 10),
       source: data.source ?? null,
+      kind: data.type === 'extra' ? 'extra' : 'memory',
+      timeline: Number.isFinite(Number(data.timeline)) ? Number(data.timeline) : null,
+      framing: data.framing ? String(data.framing) : null,
+      memories,
       hasCover: Boolean(cover),
       excerpt: excerpt ?? '',
       html: marked.parse(body),
     });
   }
 }
-storyOut.sort((a, b) => (a.date < b.date ? 1 : -1));
+storyOut.sort((a, b) => {
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  return (b.timeline ?? -1) - (a.timeline ?? -1);
+});
 fs.writeFileSync(path.join(outData, 'stories.json'), JSON.stringify(storyOut, null, 2));
 console.log(`[sync] ${storyOut.length} stories`);
 

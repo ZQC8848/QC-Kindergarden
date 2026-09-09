@@ -5,13 +5,13 @@
 //   0 neutral · 1 happy · 2 sad · 3 angry · 4 surprised · 5 shy · 6 sleepy · 7 smug · 8 crying
 
 export const characters = [
-  { slug: 'fufu',     folder: 'FUFU-enfp',    accent: '#E0782A', hoverCell: 1, en: { name: 'FUFU' } },
-  { slug: 'haide',    folder: 'haide-entp',   accent: '#4C5D7C', hoverCell: 7, en: { name: 'Haide' } },
+  { slug: 'fufu',     folder: 'Fufu-enfp',    accent: '#E0782A', hoverCell: 1, en: { name: 'Fufu' } },
+  { slug: 'haide',    folder: 'Haide-entp',   accent: '#4C5D7C', hoverCell: 7, en: { name: 'Haide' } },
   { slug: 'mimi',     folder: 'Mimi-enfj',    accent: '#6A3D9E', hoverCell: 7, en: { name: 'Mimi' } },
   { slug: 'aisha',    folder: '艾莎-intj',     accent: '#8B1E33', hoverCell: 7, en: { name: 'Aisha' } },
   { slug: 'ruanruan', folder: '软软-infp',     accent: '#D98A94', hoverCell: 8, en: { name: 'Ruanruan' } },
-  { slug: 'lukos',    folder: 'lukos-infj',   accent: '#6F849A', hoverCell: 5, en: { name: 'Lukos' } },
-  { slug: 'whiskle',  folder: 'whiskle-infp', accent: '#6C8A5B', hoverCell: 5, en: { name: 'Whiskle' } },
+  { slug: 'lukos',    folder: 'Lukos-infj',   accent: '#6F849A', hoverCell: 5, en: { name: 'Lukos' } },
+  { slug: 'whiskle',  folder: 'Whiskle-infp', accent: '#6C8A5B', hoverCell: 5, en: { name: 'Whiskle' } },
   { slug: 'mushi',    folder: '牧师-enfj',     accent: '#D39A34', hoverCell: 1, en: { name: 'Mushi' } },
   { slug: 'dianer',   folder: '点儿-intp',     accent: '#6E7B8B', hoverCell: 6, en: { name: 'Dianer' } },
   { slug: 'luyao',    folder: '陆姚-entj',     accent: '#2E2B33', hoverCell: 3, en: { name: 'Luyao' } },
@@ -24,6 +24,7 @@ export const nameToSlug = Object.fromEntries(
   characters.flatMap((c) => {
     const zh = c.folder.split('-')[0];
     return [
+      [c.slug, c.slug],
       [zh, c.slug],
       [zh.toLowerCase(), c.slug],
       [c.en.name, c.slug],

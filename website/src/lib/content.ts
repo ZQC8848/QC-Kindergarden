@@ -37,6 +37,14 @@ export interface Character {
   zh: Bible;
   en: Bible | null;
 }
+export type StoryKind = 'memory' | 'extra';
+export interface StoryMemory {
+  character: string;
+  title: string;
+  knowledge: 'witnessed' | 'heard' | 'inferred' | 'partial' | 'secret';
+  summary: string;
+  impact: string | null;
+}
 export interface Story {
   slug: string;
   title: string;
@@ -44,6 +52,10 @@ export interface Story {
   location: string | null;
   date: string;
   source: string | null;
+  kind: StoryKind;
+  timeline: number | null;
+  framing: string | null;
+  memories: StoryMemory[];
   hasCover: boolean;
   excerpt: string;
   html: string;

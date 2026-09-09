@@ -20,7 +20,10 @@ const ink = inkOf(c.accent);
 const idx = characters.findIndex((x) => x.slug === slug);
 const prev = characters[(idx - 1 + characters.length) % characters.length];
 const next = characters[(idx + 1) % characters.length];
-const mine = stories.filter((st) => st.cast.includes(slug));
+const memoryStories = stories
+  .filter((st) => st.kind === 'memory' && st.memories.some((memory) => memory.character === slug))
+  .sort((a, b) => (a.timeline ?? 999) - (b.timeline ?? 999));
+const extraStories = stories.filter((st) => st.kind === 'extra' && st.cast.includes(slug));
 const sectionId = (title: string, i: number) => `s-${i}`;
 ---
 
@@ -78,6 +81,8 @@ const sectionId = (title: string, i: number) => `s-${i}`;
               <li><a href={`#${sectionId(sec.title, i)}`}>{sec.title}</a></li>
             ))}
             {bible.extras.length > 0 && <li><a href="#extras">{s.extras}</a></li>}
+            {memoryStories.length > 0 && <li><a href="#memories">{s.memories}</a></li>}
+            {extraStories.length > 0 && <li><a href="#extra-appearances">{s.appearsInExtras}</a></li>}
             {bible.relations.length > 0 && <li><a href="#relations">{s.relations}</a></li>}
           </ul>
         </nav>
@@ -91,7 +96,7 @@ const sectionId = (title: string, i: number) => `s-${i}`;
           </section>
         ))}
 
-        {(bible.extras.length > 0 || mine.length > 0) && (
+        {bible.extras.length > 0 && (
           <section class="block" id="extras">
             <h2>{s.extras}</h2>
             {bible.extras.map((sec) => (
@@ -100,12 +105,22 @@ const sectionId = (title: string, i: number) => `s-${i}`;
                 <div class="prose" set:html={sec.html} />
               </details>
             ))}
-            {mine.length > 0 && (
-              <div class="mine">
-                <h3>{s.appearsIn}</h3>
-                <StoryList lang={lang} only={slug} />
-              </div>
-            )}
+          </section>
+        )}
+
+        {memoryStories.length > 0 && (
+          <section class="block" id="memories">
+            <h2>{s.memories}</h2>
+            <p class="section-note">{s.memoriesSub}</p>
+            <StoryList lang={lang} items={memoryStories} perspective={slug} />
+          </section>
+        )}
+
+        {extraStories.length > 0 && (
+          <section class="block" id="extra-appearances">
+            <h2>{s.appearsInExtras}</h2>
+            <p class="section-note">{s.extraTheaterSub}</p>
+            <StoryList lang={lang} items={extraStories} />
           </section>
         )}
 
@@ -299,11 +314,10 @@ const sectionId = (title: string, i: number) => `s-${i}`;
   .extra .prose {
     padding: 0 1.2rem 0.5rem;
   }
-  .mine {
-    margin-top: 2rem;
-  }
-  .mine h3 {
-    margin-bottom: 1rem;
+  .section-note {
+    color: var(--ink-2);
+    margin: -0.45rem 0 1.25rem;
+    max-width: 58ch;
   }
   .relations {
     list-style: none;

@@ -2,9 +2,9 @@
 
 Usage:
   python gen_reference.py --write-prompts            # write prompts.md into every character folder
-  python gen_reference.py FUFU-enfp turnaround       # generate one sheet
-  python gen_reference.py FUFU-enfp expressions
-  python gen_reference.py FUFU-enfp all
+  python gen_reference.py Fufu-enfp turnaround       # generate one sheet
+  python gen_reference.py Fufu-enfp expressions
+  python gen_reference.py Fufu-enfp all
   python gen_reference.py Mimi-enfj prop            # generate every prop in that character's prop_items
 
 Env: OPENROUTER_API_KEY must be set. Never hard-code the key in this file.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "故事插画"
+  short_description: "先提交分镜提案并等待确认，再根据角色参考图绘制故事插画"
+  default_prompt: "Use $story-illustrator to read a QC Kindergarden story and propose its most memorable illustration scenes. Wait for my approval before generating any image."

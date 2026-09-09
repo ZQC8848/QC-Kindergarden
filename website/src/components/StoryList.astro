@@ -5,195 +5,144 @@ import { t, type Lang } from '../i18n';
 
 interface Props {
   lang: Lang;
-  /** show only stories with this character; hides the filter */
   only?: string;
   items?: Story[];
+  perspective?: string;
 }
-const { lang, only, items } = Astro.props;
+const { lang, only, items, perspective } = Astro.props;
 const s = t(lang);
 const list = items ?? (only ? stories.filter((st) => st.cast.includes(only)) : stories);
 const castSlugs = [...new Set(list.flatMap((st) => st.cast))];
-const filterable = !only && list.length > 1;
+const filterable = !only && !items && list.length > 1;
+const grouped = !only && !items;
+const groups = grouped
+  ? [
+      { key: 'memory', title: s.memoryEvents, sub: s.memoryEventsSub, list: list.filter((st) => st.kind === 'memory') },
+      { key: 'extra', title: s.extraTheater, sub: s.extraTheaterSub, list: list.filter((st) => st.kind === 'extra') },
+    ]
+  : [{ key: 'plain', title: '', sub: '', list }];
 ---
 
 <div class="stories" data-stories>
   {filterable && (
     <div class="filters" role="group" aria-label={s.storiesSub}>
       <button class="chip is-on" data-filter="" aria-pressed="true">{s.filterAll}</button>
-      {characters
-        .filter((c) => castSlugs.includes(c.slug))
-        .map((c) => (
-          <button
-            class="chip"
-            data-filter={c.slug}
-            aria-pressed="false"
-            style={`--accent:${c.accent};--accent-ink:${inkOf(c.accent)};`}
-          >
-            {nameOf(c, lang)}
-          </button>
-        ))}
+      {characters.filter((c) => castSlugs.includes(c.slug)).map((c) => (
+        <button class="chip" data-filter={c.slug} aria-pressed="false" style={`--accent:${c.accent};--accent-ink:${inkOf(c.accent)};`}>
+          {nameOf(c, lang)}
+        </button>
+      ))}
     </div>
   )}
 
   {list.length === 0 && <p class="empty">{only ? s.noStories : s.storiesEmpty}</p>}
 
-  <ul class="list">
-    {list.map((st) => {
-      const cover = coverOf(st.slug);
-      return (
-        <li data-cast={st.cast.join(' ')}>
-          <a class="story" href={`/${lang}/stories/${st.slug}/`}>
-            <div class="cover">
-              {cover ? (
-                <Image src={cover} alt="" widths={[480, 800]} sizes="(max-width: 700px) 100vw, 420px" loading="lazy" />
-              ) : (
-                <div class="nocover" />
-              )}
-            </div>
-            <div class="body">
-              <h3>{st.title}</h3>
-              <p class="excerpt">{st.excerpt}</p>
-              <div class="cast" aria-label={s.cast}>
-                {st.cast.map((slug) => {
-                  const c = bySlug[slug];
-                  const p = c && posterOf(slug);
-                  return (
-                    c && (
-                      <span class="avatar" style={`--accent:${c.accent};`} title={nameOf(c, lang)}>
-                        {p && <Image src={p} alt={nameOf(c, lang)} width={64} height={64} loading="lazy" />}
-                      </span>
-                    )
-                  );
-                })}
-              </div>
-              <span class="date">{st.date}</span>
-            </div>
-          </a>
-        </li>
-      );
-    })}
-  </ul>
+  {groups.map((group) => group.list.length > 0 && (
+    <section class:list={["story-group", `group-${group.key}`]}>
+      {group.title && (
+        <header class="group-head">
+          <h3>{group.title}</h3>
+          <p>{group.sub}</p>
+        </header>
+      )}
+      <ul class="list">
+        {group.list.map((st) => {
+          const cover = coverOf(st.slug);
+          const memory = perspective ? st.memories.find((m) => m.character === perspective) : null;
+          return (
+            <li data-cast={st.cast.join(' ')}>
+              <a class="story" href={`/${lang}/stories/${st.slug}/`}>
+                <div class="cover">
+                  {cover ? (
+                    <Image src={cover} alt="" widths={[480, 800]} sizes="(max-width: 700px) 100vw, 420px" loading="lazy" />
+                  ) : (
+                    <div class="nocover" aria-hidden="true">
+                      {st.cast.slice(0, 3).map((slug) => {
+                        const character = bySlug[slug];
+                        const poster = character && posterOf(slug);
+                        return poster && <Image src={poster} alt="" width={320} height={420} loading="lazy" />;
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div class="body">
+                  <span class:list={["kind", `kind-${st.kind}`]}>{st.kind === 'memory' ? s.memoryEvents : s.extraTheater}</span>
+                  <h3>{st.title}</h3>
+                  {memory?.title && <p class="memory-title">“{memory.title}”</p>}
+                  <p class="excerpt">{memory?.summary || st.excerpt}</p>
+                  <div class="card-foot">
+                    <div class="cast" aria-label={s.cast}>
+                      {st.cast.map((slug) => {
+                        const c = bySlug[slug];
+                        const p = c && posterOf(slug);
+                        return c && (
+                          <span class="avatar" style={`--accent:${c.accent};`} title={nameOf(c, lang)}>
+                            {p && <Image src={p} alt={nameOf(c, lang)} width={64} height={64} loading="lazy" />}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <span class="date">{st.date}</span>
+                  </div>
+                  {st.kind === 'memory' && st.memories.length > 0 && <span class="perspectives">{st.memories.length} {s.perspectiveCount}</span>}
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
 </div>
 
 <script>
   document.querySelectorAll<HTMLElement>('[data-stories]').forEach((root) => {
     const buttons = root.querySelectorAll<HTMLButtonElement>('[data-filter]');
     const items = root.querySelectorAll<HTMLElement>('[data-cast]');
-    buttons.forEach((b) =>
-      b.addEventListener('click', () => {
-        const f = b.dataset.filter ?? '';
-        buttons.forEach((x) => {
-          const on = x === b;
-          x.classList.toggle('is-on', on);
-          x.setAttribute('aria-pressed', String(on));
-        });
-        items.forEach((li) => {
-          li.hidden = Boolean(f) && !(li.dataset.cast ?? '').split(' ').includes(f);
-        });
-      }),
-    );
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const filter = button.dataset.filter ?? '';
+      buttons.forEach((candidate) => {
+        const on = candidate === button;
+        candidate.classList.toggle('is-on', on);
+        candidate.setAttribute('aria-pressed', String(on));
+      });
+      items.forEach((item) => {
+        item.hidden = Boolean(filter) && !(item.dataset.cast ?? '').split(' ').includes(filter);
+      });
+    }));
   });
 </script>
 
 <style>
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-  .filters .chip {
-    border: 2px solid transparent;
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 700;
-  }
-  .filters .chip.is-on {
-    border-color: var(--accent-ink);
-  }
-  .empty {
-    color: var(--ink-2);
-  }
-  .list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 1.25rem;
-  }
-  .story {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 1.5rem;
-    background: var(--panel);
-    border-radius: var(--radius);
-    overflow: hidden;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-    box-shadow: var(--shadow-sm);
-  }
-  .story:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow);
-  }
-  .cover {
-    aspect-ratio: 4 / 3;
-    background: var(--panel-2);
-  }
-  .cover img,
-  .nocover {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .body {
-    padding: 1.25rem 1.5rem 1.25rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .excerpt {
-    color: var(--ink-2);
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .cast {
-    display: flex;
-    margin-top: auto;
-    padding-top: 0.5rem;
-  }
-  .avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    overflow: hidden;
-    border: 2px solid var(--panel);
-    background: color-mix(in srgb, var(--accent) 40%, var(--panel));
-    margin-left: -8px;
-  }
-  .avatar:first-child {
-    margin-left: 0;
-  }
-  .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 15%;
-  }
-  .date {
-    font-size: 0.8rem;
-    color: var(--ink-3);
-    font-weight: 700;
-  }
+  .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2rem; }
+  .filters .chip { border: 2px solid transparent; cursor: pointer; font: inherit; font-size: .85rem; font-weight: 700; }
+  .filters .chip.is-on { border-color: var(--accent-ink); }
+  .empty, .group-head p { color: var(--ink-2); }
+  .story-group + .story-group { margin-top: 3rem; padding-top: 2.5rem; border-top: 1px solid var(--line-strong); }
+  .group-head { margin-bottom: 1.25rem; max-width: 58ch; }
+  .group-head p { margin-top: .35rem; }
+  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
+  .story { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.5rem; background: var(--panel); border-radius: var(--radius); overflow: hidden; transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease; box-shadow: var(--shadow-sm); }
+  .story:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .group-extra .story { background: color-mix(in srgb, var(--panel-2) 72%, var(--bg)); }
+  .cover { aspect-ratio: 4 / 3; background: var(--panel-2); }
+  .cover > img { width: 100%; height: 100%; object-fit: cover; }
+  .nocover { width: 100%; height: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; overflow: hidden; background: var(--panel-2); }
+  .nocover :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+  .body { padding: 1.25rem 1.5rem 1.25rem 0; display: flex; flex-direction: column; gap: .55rem; }
+  .kind { align-self: flex-start; font-size: .76rem; font-weight: 900; color: var(--accent-ink); letter-spacing: .02em; }
+  .kind-extra { color: var(--ink-2); }
+  .memory-title { color: var(--accent-ink); font-weight: 800; }
+  .excerpt { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-foot { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-top: auto; padding-top: .5rem; }
+  .cast { display: flex; }
+  .avatar { width: 34px; height: 34px; border-radius: 999px; overflow: hidden; border: 2px solid var(--panel); background: color-mix(in srgb, var(--accent) 40%, var(--panel)); margin-left: -8px; }
+  .avatar:first-child { margin-left: 0; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }
+  .date, .perspectives { font-size: .8rem; color: var(--ink-3); font-weight: 700; }
   @media (max-width: 700px) {
-    .story {
-      grid-template-columns: 1fr;
-      gap: 0;
-    }
-    .body {
-      padding: 1rem 1.25rem 1.25rem;
-    }
+    .story { grid-template-columns: 1fr; gap: 0; }
+    .body { padding: 1rem 1.25rem 1.25rem; }
   }
+  @media (prefers-reduced-motion: reduce) { .story { transition: none; } }
 </style>

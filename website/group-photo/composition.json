@@ -12,12 +12,12 @@
     { "character": "陆姚", "x": 0.38, "y": 0.61, "depth": 3, "scale": 0.70 },
     { "character": "艾莎", "x": 0.50, "y": 0.66, "depth": 3, "scale": 0.70 },
     { "character": "Mimi", "x": 0.61, "y": 0.57, "depth": 3, "scale": 0.75 },
-    { "character": "whiskle", "x": 0.13, "y": 0.77, "depth": 4, "scale": 0.85 },
+    { "character": "Whiskle", "x": 0.13, "y": 0.77, "depth": 4, "scale": 0.85 },
     { "character": "牧师", "x": 0.29, "y": 0.76, "depth": 4, "scale": 0.85 },
     { "character": "软软", "x": 0.68, "y": 0.74, "depth": 4, "scale": 0.80 },
     { "character": "Liiie", "x": 0.77, "y": 0.69, "depth": 4, "scale": 0.74 },
-    { "character": "lukos", "x": 0.85, "y": 0.81, "depth": 4, "scale": 0.85 },
-    { "character": "FUFU", "x": 0.43, "y": 0.86, "depth": 5, "scale": 1.00 },
-    { "character": "haide", "x": 0.58, "y": 0.88, "depth": 5, "scale": 1.00 }
+    { "character": "Lukos", "x": 0.85, "y": 0.81, "depth": 4, "scale": 0.85 },
+    { "character": "Fufu", "x": 0.43, "y": 0.86, "depth": 5, "scale": 1.00 },
+    { "character": "Haide", "x": 0.58, "y": 0.88, "depth": 5, "scale": 1.00 }
   ]
 }
