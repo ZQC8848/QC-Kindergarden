@@ -11,12 +11,7 @@ const lang = Astro.params.lang as Lang;
 const slug = Astro.params.slug as string;
 const st = stories.find((x) => x.slug === slug)!;
 const s = t(lang);
-const explicitCover = coverOf(st.slug);
-const illustrations = st.illustrations
-  .map((panel) => ({ panel, image: illustrationOf(st.slug, panel) }))
-  .filter((item) => item.image);
-const cover = explicitCover ?? illustrations[0]?.image;
-const inlineIllustrations = explicitCover ? illustrations : illustrations.slice(1);
+const cover = coverOf(st.slug);
 const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
 ---
 
@@ -60,21 +55,18 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     )}
     {lang === 'en' && <p class="notice">{s.notTranslated}</p>}
     {st.kind === 'extra' && <p class="notice extra-notice">{st.framing || s.extraNotice}</p>}
-    <div class="prose text" set:html={st.html} />
-
-    {inlineIllustrations.length > 0 && (
-      <section class="illustration-section" aria-labelledby="story-illustrations">
-        <h2 id="story-illustrations">{s.storyIllustrations}</h2>
-        <div class="illustration-list">
-          {inlineIllustrations.map(({ panel, image }) => (
-            <figure>
-              <Image src={image!} alt={`${s.illustration} ${panel}`} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="lazy" />
-              <figcaption>{s.illustration} {panel}</figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
-    )}
+    <div class="story-flow">
+      {st.content.map((block) => {
+        if (block.type === 'html') return <div class="prose text" set:html={block.html} />;
+        const image = illustrationOf(st.slug, block.panel);
+        return image && (
+          <figure class="story-illustration">
+            <Image src={image} alt={block.title} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="lazy" />
+            <figcaption>{block.title}</figcaption>
+          </figure>
+        );
+      })}
+    </div>
 
     {st.kind === 'memory' && st.memories.length > 0 && (
       <section class="memory-section">
@@ -194,8 +186,10 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
   .extra-notice {
     border-left: 4px solid var(--accent);
   }
-  .text {
+  .story-flow {
     margin-top: 2rem;
+  }
+  .text {
     font-size: 1.08rem;
     line-height: 1.9;
   }
@@ -206,33 +200,26 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
   .text :global(hr) {
     margin: 2.2em 0;
   }
-  .illustration-section {
-    margin-top: 4rem;
-    padding-top: 3rem;
-    border-top: 1px solid var(--line-strong);
-  }
-  .illustration-list {
-    margin-top: 1.25rem;
-    display: grid;
-    gap: 1.5rem;
-  }
-  .illustration-list figure {
-    margin: 0;
+  .story-illustration {
+    margin: 2.5rem 0;
     overflow: hidden;
+    border: 1px solid var(--line-strong);
     border-radius: var(--radius);
     background: var(--panel);
     box-shadow: var(--shadow-sm);
   }
-  .illustration-list img {
+  .story-illustration img {
     width: 100%;
     height: auto;
     display: block;
   }
-  .illustration-list figcaption {
-    padding: 0.65rem 1rem;
-    color: var(--ink-3);
-    font-size: 0.8rem;
-    font-weight: 700;
+  .story-illustration figcaption {
+    padding: 0.85rem 1.1rem;
+    border-top: 1px solid var(--line-strong);
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    font-weight: 800;
   }
   .memory-section {
     margin-top: 4rem;

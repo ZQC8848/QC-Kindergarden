@@ -46,6 +46,9 @@ export interface StoryMemory {
   summary: string;
   impact: string | null;
 }
+export type StoryContentBlock =
+  | { type: 'html'; html: string }
+  | { type: 'illustration'; panel: number; title: string };
 export interface Story {
   slug: string;
   title: string;
@@ -61,7 +64,7 @@ export interface Story {
   hasCover: boolean;
   illustrations: number[];
   excerpt: string;
-  html: string;
+  content: StoryContentBlock[];
 }
 
 export const characters = charactersJson as Character[];

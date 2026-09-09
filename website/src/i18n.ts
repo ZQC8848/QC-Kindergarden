@@ -48,8 +48,6 @@ const dict = {
     next: '下一个',
     appearsIn: '出场的故事',
     noStories: '还没有出场的故事。',
-    storyIllustrations: '故事插图',
-    illustration: '插图',
     switchLang: 'English',
   },
   en: {
@@ -98,8 +96,6 @@ const dict = {
     next: 'Next',
     appearsIn: 'Appears in',
     noStories: 'No stories yet.',
-    storyIllustrations: 'Story illustrations',
-    illustration: 'Illustration',
     switchLang: '中文',
   },
 } as const;

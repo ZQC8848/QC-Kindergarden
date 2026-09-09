@@ -66,6 +66,21 @@ function latestIllustrations(dir, stem) {
   return [...latestByPanel.values()].sort((a, b) => a.panel - b.panel);
 }
 
+function parseStoryContent(body) {
+  const blocks = [];
+  const marker = /<!--\s*illustration:(\d+)\s*\|\s*(.*?)\s*-->/g;
+  let cursor = 0;
+  for (const match of body.matchAll(marker)) {
+    const markdown = body.slice(cursor, match.index).trim();
+    if (markdown) blocks.push({ type: 'html', html: marked.parse(markdown) });
+    blocks.push({ type: 'illustration', panel: Number(match[1]), title: match[2].trim() });
+    cursor = match.index + match[0].length;
+  }
+  const markdown = body.slice(cursor).trim();
+  if (markdown) blocks.push({ type: 'html', html: marked.parse(markdown) });
+  return blocks;
+}
+
 const knownSlugs = new Set(characters.map((c) => c.slug));
 function resolveSlug(value) {
   const raw = String(value).trim();
@@ -250,7 +265,7 @@ if (fs.existsSync(STORIES)) {
       hasCover: Boolean(cover),
       illustrations: illustrations.map(({ panel }) => panel),
       excerpt: excerpt ?? '',
-      html: marked.parse(body),
+      content: parseStoryContent(body),
     });
   }
 }
