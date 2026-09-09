@@ -1,6 +1,16 @@
 # 首页合照构思
 
-日期：2026-09-08　状态：构思定稿，未出图　上位文档：[DESIGN.md](DESIGN.md)（首页四层之第一层）
+日期：2026-09-08　状态：概念稿与 12 人姿态稿完成，待统一抠图与正式合成　上位文档：[DESIGN.md](DESIGN.md)（首页四层之第一层）
+
+## 执行状态
+
+- 全员构图概念稿：`website/group-photo/work/concept-v1.png`
+- 16:9 无人物背景层：`website/group-photo/work/background-16x9-v1.png`
+- 12 人白底姿态候选：`website/group-photo/work/<角色>-pose-candidate-v1.png`
+- 角色身份总表：`website/group-photo/work/identity-sheet.png`
+- 身份总表生成工具：`website/group-photo/_tools/build_identity_sheet.py`
+
+概念稿一次生成即包含准确的 12 位角色，没有缺人或重复，人物色彩和主动作关系可作为正式合成母版。当前内置图像生成器即使要求透明背景，仍会把棋盘格烘进 RGB，不能冒充真正的 alpha 图层。因此单人姿态统一保存为白底候选，下一步集中完成背景提取、边缘检查、接触阴影和正式分层合成。
 
 ## 一句话概念
 
@@ -72,7 +82,7 @@
 
 按 DESIGN.md "每角色一个图层"的定案：
 
-1. `character reference/_tools/gen_reference.py` 加一个 `pose` 模式：每个角色的动作、表情、视线、朝向写进 `characters.json`，附角色参考图生成白底全身单人图。上表"在干什么""表情""视线"三列就是提示词主体。
+1. ~~逐角色生成白底全身姿态图。~~ 已完成，提示词来自上表的"在干什么""表情""视线"三列，并额外统一光向与相机。
 2. 每张单人图统一光向（暖金、上方略偏左）、统一相机高度（儿童视线，略仰）。
 3. 先出 FUFU 和 haide 两张定基调。haide 腾空四条腿的姿势最容易崩，多出几版。
 4. 合成时按坐标表摆放，前排最大。艾莎和 C 位之间留出树干通道。
@@ -85,8 +95,10 @@
 
 ## 待办
 
-- [ ] `pose` 模式进脚本
-- [ ] 12 条 pose 提示词写入 `characters.json`
-- [ ] FUFU、haide 试图
-- [ ] 其余 10 人出图
+- [x] 全员概念稿
+- [x] 16:9 无人物背景层
+- [x] 身份总表与重建工具
+- [x] FUFU、haide 试图
+- [x] 其余 10 人出图
+- [ ] 12 人统一背景提取与毛发边缘检查
 - [ ] 合成 + 分层导出
