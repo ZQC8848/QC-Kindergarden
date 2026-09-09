@@ -1,6 +1,6 @@
 # Glossary
 
-Fixed English renderings. Use these before inventing anything. Entries marked *pending* were chosen by a translation run and are waiting for QC's confirmation (see [decisions.md](decisions.md)).
+Fixed English renderings. Use these before inventing anything. Entries marked *pending* were chosen by a translation run and are waiting for QC's confirmation; approved ones carry the approval date (see [decisions.md](decisions.md)).
 
 ## Character names
 
@@ -64,11 +64,28 @@ Display names come from `website/src/data/characters.config.mjs` (`en.name`). Lo
 | 小手术 | "the little operation" | QC's euphemism; keep the quotation marks. |
 | 七天追咬 | the seven-day bite | Story title: "The Seven-Day Bite". |
 | 定榜 / 定榜夜 | the rankings lock / ranking night | Story title: "Kings of Rant: Ranking Night". |
-| 王者兰特 | Kings of Rant | *pending QC* (2026-09-09). Parody of a MOBA title; "Rant" keeps the sound of 兰特 and the trash-talk. |
-| 狗不理 | NoDogsAllowed | *pending QC* (2026-09-09). Haide's #1 ID. The bun-brand pun is replaced by an ID a dog would never be expected to hold. |
-| 点到为止 | PointTaken | *pending QC* (2026-09-09). Dianer's ID; "Point" carries 点, the idiom's "stop there" becomes "taken". |
+| 王者兰特 | Kings of Rant | Approved 2026-09-09. Parody of a MOBA title; "Rant" keeps the sound of 兰特 and the trash-talk. |
+| 狗不理 | NoDogsAllowed | Approved 2026-09-09. Haide's #1 ID. The bun-brand pun is replaced by an ID a dog would never be expected to hold. |
+| 点到为止 | PointTaken | Approved 2026-09-09. Dianer's ID; "Point" carries 点, the idiom's "stop there" becomes "taken". |
 | 夜行玫瑰 | NightRose | Liiie's game ID, written as one word like a gamer handle. |
 | 月度异常 | monthly anomaly | Aisha's log entry. |
+
+## Catchphrases (card line first)
+
+| 角色 | English |
+|---|---|
+| Fufu | "I have a GREAT idea!" |
+| Haide | "Just try it!" |
+| Mimi | "I've got you." |
+| Aisha | "And then?" · "I, I told you so." |
+| Ruanruan | "…Is that okay?" · "Bun-bun says…" |
+| Lukos | "Are you okay?" |
+| Whiskle | "I really am a boy." · "It's growing." |
+| Mushi | "Have you heard?" · "Well… this doesn't come free." |
+| Dianer | "Why does that happen?" · "Hang on, let me work it out." |
+| Luyao | "Don't make me swear at you." · "Plan." |
+| Liiie | "Of course, no problem." |
+| QC | "You guys figure it out." · "Where's my nephew?" |
 
 ## Story titles
 
