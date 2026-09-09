@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+src/assets/characters/
+src/assets/stories/
+src/assets/scenes/
+src/assets/group-photo.png
+src/data/characters.json
+src/data/stories.json

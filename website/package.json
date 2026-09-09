@@ -1,0 +1,20 @@
+{
+  "name": "qc-kindergarden-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-content.mjs",
+    "dev": "npm run sync && astro dev",
+    "build": "npm run sync && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^7.3.2",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.12"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "sharp@0.35.4": true
+  }
+}

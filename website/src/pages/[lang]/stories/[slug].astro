@@ -1,0 +1,117 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../../layouts/Base.astro';
+import { stories, bySlug, coverOf, posterOf, nameOf, sceneMeta } from '../../../lib/content';
+import { t, langs, otherLang, type Lang } from '../../../i18n';
+
+export function getStaticPaths() {
+  return langs.flatMap((lang) => stories.map((st) => ({ params: { lang, slug: st.slug } })));
+}
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.slug as string;
+const st = stories.find((x) => x.slug === slug)!;
+const s = t(lang);
+const cover = coverOf(st.slug);
+const place = sceneMeta.find((r) => r.file === st.location);
+---
+
+<Base lang={lang} title={`${st.title} · ${s.siteName}`} description={st.excerpt} altPath={`/${otherLang(lang)}/stories/${slug}/`}>
+  <article class="story wrap">
+    <p class="crumbs"><a href={`/${lang}/#stories`}>{s.storiesTitle}</a></p>
+    <h1>{st.title}</h1>
+    <div class="meta">
+      <span>{st.date}</span>
+      {place && <span>{s.location}: {lang === 'en' ? place.en : place.zh}</span>}
+    </div>
+    <div class="cast" aria-label={s.cast}>
+      {st.cast.map((cs) => {
+        const c = bySlug[cs];
+        const p = c && posterOf(cs);
+        return (
+          c && (
+            <a class="member" href={`/${lang}/characters/${cs}/`} style={`--accent:${c.accent};`}>
+              {p && <Image src={p} alt="" width={80} height={80} loading="lazy" />}
+              <span>{nameOf(c, lang)}</span>
+            </a>
+          )
+        );
+      })}
+    </div>
+    {cover && (
+      <figure class="cover">
+        <Image src={cover} alt="" widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="eager" />
+      </figure>
+    )}
+    {lang === 'en' && <p class="notice">{s.notTranslated}</p>}
+    <div class="prose text" set:html={st.html} />
+  </article>
+</Base>
+
+<style>
+  .story {
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+    max-width: 960px;
+  }
+  .crumbs {
+    font-weight: 700;
+    color: var(--ink-2);
+    margin-bottom: 0.5rem;
+  }
+  .meta {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 1.25rem;
+    color: var(--ink-2);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .cast {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .member {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.8rem 0.25rem 0.25rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+  .member img {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    object-fit: cover;
+    object-position: 50% 15%;
+  }
+  .cover {
+    margin: 2rem 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .notice {
+    margin: 1.5rem 0;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+    color: var(--accent-ink);
+    font-weight: 700;
+  }
+  .text {
+    margin-top: 2rem;
+    font-size: 1.08rem;
+    line-height: 1.9;
+  }
+  .text :global(h2),
+  .text :global(h3) {
+    margin: 2em 0 0.8em;
+  }
+  .text :global(hr) {
+    margin: 2.2em 0;
+  }
+</style>

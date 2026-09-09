@@ -1,0 +1,88 @@
+---
+import Base from '../../layouts/Base.astro';
+import GroupPhoto from '../../components/GroupPhoto.astro';
+import CharacterCard from '../../components/CharacterCard.astro';
+import StoryList from '../../components/StoryList.astro';
+import Places from '../../components/Places.astro';
+import { characters } from '../../lib/content';
+import { t, langs, otherLang, type Lang } from '../../i18n';
+
+export function getStaticPaths() {
+  return langs.map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as Lang;
+const s = t(lang);
+---
+
+<Base lang={lang} title={s.siteName} description={s.intro} altPath={`/${otherLang(lang)}/`}>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <h1>{s.tagline}</h1>
+      <p>{s.intro}</p>
+    </div>
+    <GroupPhoto lang={lang} />
+  </section>
+
+  <section id="characters" class="section wrap">
+    <div class="section-head">
+      <h2>{s.charactersTitle}</h2>
+      <p>{s.charactersSub}</p>
+    </div>
+    <div class="grid">
+      {characters.map((c, i) => <CharacterCard c={c} lang={lang} index={i} />)}
+    </div>
+  </section>
+
+  <section id="stories" class="section band">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>{s.storiesTitle}</h2>
+        <p>{s.storiesSub}</p>
+      </div>
+      <StoryList lang={lang} />
+    </div>
+  </section>
+
+  <section id="places" class="section wrap">
+    <div class="section-head">
+      <h2>{s.placesTitle}</h2>
+      <p>{s.placesSub}</p>
+    </div>
+    <Places lang={lang} />
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+    display: grid;
+    gap: 1.5rem;
+  }
+  .hero-copy {
+    max-width: 44ch;
+  }
+  .hero-copy p {
+    margin-top: 0.8rem;
+    color: var(--ink-2);
+    font-size: 1.05rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  @media (max-width: 1024px) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+  }
+  .band {
+    background: var(--panel);
+  }
+</style>

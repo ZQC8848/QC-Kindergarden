@@ -1,0 +1,81 @@
+export type Lang = 'zh' | 'en';
+export const langs: Lang[] = ['zh', 'en'];
+
+const dict = {
+  zh: {
+    siteName: 'QC Kindergarden',
+    tagline: '一所幼儿园，十二个角色。',
+    intro: '以创作者和朋友们的真实性格为原型，用 AI 铸出来的一群小孩和一条狗。合照没拍成，点谁看谁。',
+    nav: { characters: '角色', stories: '故事', places: '环境', research: '研究' },
+    hero: { alt: '庭院大树下的全员合照，每个人都在干自己的事', hint: '点击照片里的人' },
+    charactersTitle: '角色',
+    charactersSub: '悬停看表情，点击进主页。',
+    storiesTitle: '故事集',
+    storiesSub: '按出场角色筛选。',
+    storiesEmpty: '还没有故事。',
+    filterAll: '全部',
+    placesTitle: '幼儿园',
+    placesSub: '十个房间加一张平面图。全景热区还在做。',
+    readStory: '读这篇',
+    cast: '出场',
+    location: '地点',
+    backHome: '回首页',
+    allCharacters: '所有角色',
+    phrase: '口头禅',
+    profile: '设定',
+    extras: '故事',
+    relations: '关系',
+    turnaround: '三视图',
+    threeD: '3D 模型准备中，先看三视图。',
+    notTranslated: '英文版还没翻译，先显示中文。',
+    footer: '一个人物先行的情景喜剧实验。',
+    research: '研究说明',
+    prev: '上一个',
+    next: '下一个',
+    appearsIn: '出场的故事',
+    noStories: '还没有出场的故事。',
+    switchLang: 'English',
+  },
+  en: {
+    siteName: 'QC Kindergarden',
+    tagline: 'One kindergarten, twelve characters.',
+    intro: 'Kids and one dog, forged with AI from the real personalities of the creator and their friends. The photo never worked out. Click anyone.',
+    nav: { characters: 'Characters', stories: 'Stories', places: 'Places', research: 'Research' },
+    hero: { alt: 'Group photo under the courtyard tree, everyone doing their own thing', hint: 'Click a character in the photo' },
+    charactersTitle: 'Characters',
+    charactersSub: 'Hover for an expression, click for the profile.',
+    storiesTitle: 'Stories',
+    storiesSub: 'Filter by who appears.',
+    storiesEmpty: 'No stories yet.',
+    filterAll: 'All',
+    placesTitle: 'The kindergarten',
+    placesSub: 'Ten rooms and a floor plan. The panorama with hotspots is still in progress.',
+    readStory: 'Read',
+    cast: 'Cast',
+    location: 'Location',
+    backHome: 'Home',
+    allCharacters: 'All characters',
+    phrase: 'Catchphrase',
+    profile: 'Profile',
+    extras: 'Stories',
+    relations: 'Relationships',
+    turnaround: 'Turnaround',
+    threeD: '3D model coming; here is the turnaround for now.',
+    notTranslated: 'Not translated yet. Showing the Chinese original.',
+    footer: 'A character-first sitcom experiment.',
+    research: 'Research notes',
+    prev: 'Previous',
+    next: 'Next',
+    appearsIn: 'Appears in',
+    noStories: 'No stories yet.',
+    switchLang: '中文',
+  },
+} as const;
+
+export function t(lang: Lang) {
+  return dict[lang];
+}
+
+export function otherLang(lang: Lang): Lang {
+  return lang === 'zh' ? 'en' : 'zh';
+}

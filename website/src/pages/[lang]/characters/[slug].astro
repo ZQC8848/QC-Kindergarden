@@ -1,0 +1,368 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../../layouts/Base.astro';
+import StoryList from '../../../components/StoryList.astro';
+import { characters, bySlug, posterOf, turnaroundOf, stories, bibleFor, nameOf, inkOf } from '../../../lib/content';
+import { t, langs, otherLang, type Lang } from '../../../i18n';
+
+export function getStaticPaths() {
+  return langs.flatMap((lang) => characters.map((c) => ({ params: { lang, slug: c.slug } })));
+}
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.slug as string;
+const c = bySlug[slug];
+const s = t(lang);
+const { bible, fallback } = bibleFor(c, lang);
+const name = nameOf(c, lang);
+const poster = posterOf(c.slug);
+const turnaround = turnaroundOf(c.slug);
+const ink = inkOf(c.accent);
+const idx = characters.findIndex((x) => x.slug === slug);
+const prev = characters[(idx - 1 + characters.length) % characters.length];
+const next = characters[(idx + 1) % characters.length];
+const mine = stories.filter((st) => st.cast.includes(slug));
+const sectionId = (title: string, i: number) => `s-${i}`;
+---
+
+<Base
+  lang={lang}
+  title={`${name} · ${s.siteName}`}
+  description={bible.tagline}
+  accent={c.accent}
+  accentInk={ink}
+  altPath={`/${otherLang(lang)}/characters/${slug}/`}
+>
+  <article class="char">
+    <header class="top wrap">
+      <div class="poster plate">
+        {poster && (
+          <Image src={poster} alt={`${name} poster`} widths={[480, 720, 960]} sizes="(max-width: 860px) 100vw, 420px" loading="eager" fetchpriority="high" />
+        )}
+      </div>
+      <div class="intro">
+        <p class="crumbs"><a href={`/${lang}/#characters`}>{s.allCharacters}</a></p>
+        <h1>{name}</h1>
+        <p class="mbti"><span class="chip">{c.mbti}</span> <span class="mbti-label">{bible.mbtiLabel.replace(/^[A-Z]{4}/, '').replace(/^[（(]|[)）]$/g, '')}</span></p>
+        {bible.tagline && <p class="tagline">{bible.tagline}</p>}
+        {bible.phrases.length > 0 && (
+          <div class="phrases">
+            <span class="k">{s.phrase}</span>
+            {bible.phrases.map((p) => <span class="phrase">“{p}”</span>)}
+          </div>
+        )}
+        <nav class="pager" aria-label="characters">
+          <a href={`/${lang}/characters/${prev.slug}/`} rel="prev">← {nameOf(prev, lang)}</a>
+          <a href={`/${lang}/characters/${next.slug}/`} rel="next">{nameOf(next, lang)} →</a>
+        </nav>
+      </div>
+    </header>
+
+    {fallback && <p class="wrap notice">{s.notTranslated}</p>}
+
+    {turnaround && (
+      <section class="wrap turn">
+        <details>
+          <summary>{s.turnaround} <span class="sub">{s.threeD}</span></summary>
+          <div class="turn-scroll" tabindex="0">
+            <Image src={turnaround} alt={`${name} ${s.turnaround}`} widths={[1200, 1800]} sizes="1200px" loading="lazy" />
+          </div>
+        </details>
+      </section>
+    )}
+
+    <section class="wrap body">
+      <aside class="toc">
+        <nav aria-label={s.profile}>
+          <ul>
+            {bible.description.map((sec, i) => (
+              <li><a href={`#${sectionId(sec.title, i)}`}>{sec.title}</a></li>
+            ))}
+            {bible.extras.length > 0 && <li><a href="#extras">{s.extras}</a></li>}
+            {bible.relations.length > 0 && <li><a href="#relations">{s.relations}</a></li>}
+          </ul>
+        </nav>
+      </aside>
+
+      <div class="content">
+        {bible.description.map((sec, i) => (
+          <section class="block" id={sectionId(sec.title, i)}>
+            <h2>{sec.title}</h2>
+            <div class="prose" set:html={sec.html} />
+          </section>
+        ))}
+
+        {(bible.extras.length > 0 || mine.length > 0) && (
+          <section class="block" id="extras">
+            <h2>{s.extras}</h2>
+            {bible.extras.map((sec) => (
+              <details class="extra" open={bible.extras.length <= 2}>
+                <summary>{sec.title}</summary>
+                <div class="prose" set:html={sec.html} />
+              </details>
+            ))}
+            {mine.length > 0 && (
+              <div class="mine">
+                <h3>{s.appearsIn}</h3>
+                <StoryList lang={lang} only={slug} />
+              </div>
+            )}
+          </section>
+        )}
+
+        {bible.relations.length > 0 && (
+          <section class="block" id="relations">
+            <h2>{s.relations}</h2>
+            <ul class="relations">
+              {bible.relations.map((r) => (
+                <li>
+                  <div class="faces">
+                    {r.targets.map((tslug) => {
+                      const tc = bySlug[tslug];
+                      const tp = tc && posterOf(tslug);
+                      return (
+                        tc && (
+                          <a href={`/${lang}/characters/${tslug}/`} class="face" style={`--accent:${tc.accent};`} title={nameOf(tc, lang)}>
+                            {tp && <Image src={tp} alt={nameOf(tc, lang)} width={72} height={72} loading="lazy" />}
+                          </a>
+                        )
+                      );
+                    })}
+                  </div>
+                  <p class="prose" set:html={r.html} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .top {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    align-items: center;
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+  }
+  .poster {
+    overflow: hidden;
+  }
+  .poster img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+  .crumbs {
+    font-weight: 700;
+    color: var(--ink-2);
+    margin-bottom: 0.5rem;
+  }
+  .crumbs a:hover {
+    color: var(--ink);
+  }
+  .mbti {
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ink-2);
+    font-weight: 700;
+  }
+  .tagline {
+    margin-top: 1.2rem;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    max-width: 36ch;
+  }
+  .phrases {
+    margin-top: 1.2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.8rem;
+    align-items: baseline;
+  }
+  .phrases .k {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--accent-ink);
+  }
+  .phrase {
+    color: var(--ink-2);
+  }
+  .pager {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    font-weight: 800;
+    color: var(--ink-2);
+  }
+  .pager a:hover {
+    color: var(--accent-ink);
+  }
+  .notice {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+    color: var(--accent-ink);
+    font-weight: 700;
+  }
+  .turn {
+    margin-top: 2rem;
+  }
+  details {
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+  summary {
+    cursor: pointer;
+    padding: 0.9rem 1.2rem;
+    font-weight: 800;
+    list-style: none;
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: '+';
+    font-weight: 900;
+    color: var(--accent-ink);
+    width: 1em;
+  }
+  details[open] > summary::before {
+    content: '-';
+  }
+  summary .sub {
+    font-weight: 600;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+  .turn-scroll {
+    overflow-x: auto;
+    padding: 0 1.2rem 1.2rem;
+  }
+  .turn-scroll img {
+    min-width: 900px;
+    border-radius: var(--radius-sm);
+  }
+  .body {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 3rem;
+    margin-top: 3rem;
+  }
+  .toc {
+    position: sticky;
+    top: calc(var(--nav-h) + 1.5rem);
+    align-self: start;
+  }
+  .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 2px solid var(--line);
+  }
+  .toc a {
+    display: block;
+    padding: 0.35rem 0 0.35rem 1rem;
+    color: var(--ink-2);
+    font-weight: 700;
+    font-size: 0.92rem;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+  }
+  .toc a:hover {
+    color: var(--accent-ink);
+    border-left-color: var(--accent);
+  }
+  .block {
+    padding-bottom: 2.5rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .block:last-child {
+    border-bottom: 0;
+  }
+  .block h2 {
+    margin-bottom: 1rem;
+  }
+  .extra {
+    margin-bottom: 0.75rem;
+  }
+  .extra .prose {
+    padding: 0 1.2rem 0.5rem;
+  }
+  .mine {
+    margin-top: 2rem;
+  }
+  .mine h3 {
+    margin-bottom: 1rem;
+  }
+  .relations {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .relations li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem 1.2rem;
+    background: var(--panel);
+    border-radius: var(--radius);
+  }
+  .faces {
+    display: flex;
+    min-width: 44px;
+  }
+  .face {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--accent) 40%, var(--panel));
+    border: 2px solid var(--bg);
+    margin-left: -10px;
+  }
+  .face:first-child {
+    margin-left: 0;
+  }
+  .face img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 15%;
+  }
+  @media (max-width: 860px) {
+    .top {
+      grid-template-columns: 1fr;
+    }
+    .body {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    .toc {
+      position: static;
+    }
+    .toc ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.75rem;
+      border: 0;
+    }
+    .toc a {
+      border: 0;
+      padding: 0.2rem 0;
+    }
+  }
+</style>

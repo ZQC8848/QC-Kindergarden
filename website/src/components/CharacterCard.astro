@@ -1,0 +1,123 @@
+---
+import { Image, getImage } from 'astro:assets';
+import { posterOf, expressionsOf, nameOf, inkOf, type Character } from '../lib/content';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  c: Character;
+  lang: Lang;
+  index: number;
+}
+const { c, lang, index } = Astro.props;
+const s = t(lang);
+const poster = posterOf(c.slug);
+const exprMeta = expressionsOf(c.slug);
+const expr = exprMeta ? await getImage({ src: exprMeta, width: 720, format: 'webp' }) : null;
+const col = c.hoverCell % 3;
+const row = Math.floor(c.hoverCell / 3);
+const phrase = c.zh.phrases[0] ?? '';
+const href = `/${lang}/characters/${c.slug}/`;
+---
+
+<a
+  class="card reveal"
+  href={href}
+  style={`--accent:${c.accent};--accent-ink:${inkOf(c.accent)};--i:${index};`}
+>
+  <div class="face">
+    {poster && (
+      <Image
+        src={poster}
+        alt={`${nameOf(c, lang)} poster`}
+        widths={[320, 480, 640]}
+        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
+        loading={index < 4 ? 'eager' : 'lazy'}
+      />
+    )}
+    {expr && (
+      <div
+        class="expr"
+        aria-hidden="true"
+        style={`background-image:url(${expr.src});background-position:${col * 50}% ${row * 50}%;`}
+      />
+    )}
+  </div>
+  <div class="meta">
+    <div class="row">
+      <h3>{nameOf(c, lang)}</h3>
+      <span class="chip">{c.mbti}</span>
+    </div>
+    {phrase && <p class="phrase">“{phrase}”</p>}
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius);
+    background: var(--panel);
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    animation-delay: calc(var(--i) * 40ms);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+  }
+  .card:active {
+    transform: translateY(0) scale(0.99);
+  }
+  .face {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  }
+  .face img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .expr {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-size: auto 300%;
+    background-color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .card:hover .expr,
+  .card:focus-visible .expr {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .expr {
+      display: none;
+    }
+  }
+  .meta {
+    padding: 0.9rem 1rem 1.1rem;
+    border-top: 4px solid var(--accent);
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  h3 {
+    font-size: 1.2rem;
+  }
+  .phrase {
+    margin-top: 0.4rem;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

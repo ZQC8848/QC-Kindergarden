@@ -1,0 +1,71 @@
+---
+import { Image } from 'astro:assets';
+import { sceneMeta, sceneOf } from '../lib/content';
+import type { Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const rooms = sceneMeta.filter((r) => r.file !== 'Kindergarden-Map');
+const map = sceneOf('Kindergarden-Map');
+const mapMeta = sceneMeta.find((r) => r.file === 'Kindergarden-Map');
+---
+
+<div class="places">
+  <ul class="strip" tabindex="0">
+    {rooms.map((r) => {
+      const img = sceneOf(r.file);
+      return (
+        img && (
+          <li>
+            <Image src={img} alt={lang === 'en' ? r.en : r.zh} widths={[480, 720]} sizes="360px" loading="lazy" />
+            <span>{lang === 'en' ? r.en : r.zh}</span>
+          </li>
+        )
+      );
+    })}
+  </ul>
+  {map && (
+    <figure class="map">
+      <Image src={map} alt={lang === 'en' ? mapMeta?.en : mapMeta?.zh} widths={[800, 1200, 1600]} sizes="(max-width: 1240px) 100vw, 1200px" loading="lazy" />
+    </figure>
+  )}
+</div>
+
+<style>
+  .strip {
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0 0 0.75rem;
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+  .strip li {
+    flex: 0 0 min(360px, 78vw);
+    scroll-snap-align: start;
+  }
+  .strip img {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+  .strip span {
+    display: block;
+    margin-top: 0.5rem;
+    font-weight: 700;
+    color: var(--ink-2);
+    font-size: 0.95rem;
+  }
+  .map {
+    margin: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+</style>
