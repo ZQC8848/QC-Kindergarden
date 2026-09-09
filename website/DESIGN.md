@@ -1,4 +1,4 @@
-# QC Kindergarden 项目网站设计案
+# QC Kindergarten 项目网站设计案
 
 日期：2026-09-08　状态：已定案，未开工
 

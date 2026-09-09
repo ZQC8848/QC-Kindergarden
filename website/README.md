@@ -1,6 +1,6 @@
 # website
 
-QC Kindergarden 的项目网站。Astro 静态站，中英双语，部署在 Vercel。设计定案见 [DESIGN.md](DESIGN.md)，合照构思见 [GROUP-PHOTO.md](GROUP-PHOTO.md)。
+QC Kindergarten 的项目网站。Astro 静态站，中英双语，部署在 Vercel。设计定案见 [DESIGN.md](DESIGN.md)，合照构思见 [GROUP-PHOTO.md](GROUP-PHOTO.md)。
 
 ## 跑起来
 
@@ -19,11 +19,13 @@ npm run build    # 输出到 dist/
 |---|---|
 | `character reference/<角色>/性格设定.md` | `src/data/characters.json`（按 `## ` 标题切块，转成 HTML） |
 | `character reference/<角色>/*.png`（立绘、表情表、三视图最新版） | `src/assets/characters/<slug>/` |
-| `stories/*.md` + `stories/assets/<故事>-vN.png`（最新版） | `src/data/stories.json` + `src/assets/stories/` |
+| `stories/*.md` + `stories/assets/<故事>-vN.png`（封面）+ `<故事>-pN-vN.png`（分镜插图） | `src/data/stories.json` + `src/assets/stories/` |
 | `Scene Reference/*.png` | `src/assets/scenes/` |
 | `website/group-photo/group-photo-final-v1.png` + `composition.json` | 首页合照与热区坐标 |
 
 生成的 JSON 和拷贝的图片都在 `.gitignore` 里，不进仓库。改了 bible 或故事，重跑 `npm run sync` 或重启 dev 即可。
+
+故事封面和每个分镜编号都会自动选择最高版本号。没有独立封面的故事会用第一幅分镜插图作为列表缩略图与详情页头图，其余插图按分镜编号显示在正文之后。
 
 角色的 slug、强调色、悬停表情格、英文名在 `src/data/characters.config.mjs`。加新角色只需要在那里加一行。
 

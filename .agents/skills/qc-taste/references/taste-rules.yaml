@@ -1,0 +1,94 @@
+version: "0.1"
+evidence_through: "2026-09-09"
+status: "working-profile"
+rules:
+  - id: "T001"
+    rule: "Start from character wants and contradictions; let theme emerge from their collision."
+    scope: "qc-kindergarten.story"
+    confidence: "stable"
+    evidence: ["E012"]
+    counterexamples: []
+  - id: "T002"
+    rule: "Give important characters a behavioral second self that contradicts their readable surface."
+    scope: "qc-kindergarten.character"
+    confidence: "stable"
+    evidence: ["E004", "E005", "E006", "E007"]
+    counterexamples: []
+  - id: "T003"
+    rule: "Escalate absurd events through character-caused consequences rather than random gags."
+    scope: "qc-kindergarten.story"
+    confidence: "repeated"
+    evidence: ["E008", "E009", "E016"]
+    counterexamples: []
+  - id: "T004"
+    rule: "Use different ensemble reactions to reveal relationships while preserving one dominant comic line."
+    scope: "qc-kindergarten.story_visual"
+    confidence: "repeated"
+    evidence: ["E010", "E013"]
+    counterexamples: []
+  - id: "T005"
+    rule: "Prefer concrete recurring props and details that can return later with changed meaning."
+    scope: "qc-kindergarten.story_visual"
+    confidence: "repeated"
+    evidence: ["E008", "E009", "E016"]
+    counterexamples: []
+  - id: "T006"
+    rule: "Keep canonical events separate from each character's limited and subjective memory."
+    scope: "qc-kindergarten.continuity"
+    confidence: "stable"
+    evidence: ["E014"]
+    counterexamples: []
+  - id: "T007"
+    rule: "Use restrained delivery, short dialogue, delayed reaction, and under-explained endings."
+    scope: "qc-kindergarten.prose"
+    confidence: "provisional"
+    evidence: ["E016", "E017", "E018"]
+    counterexamples: []
+  - id: "T008"
+    rule: "Optimize the project for funny, memorable entertainment rather than imposed thematic depth."
+    scope: "qc-kindergarten.story"
+    confidence: "stable"
+    evidence: ["E012"]
+    counterexamples: []
+  - id: "T009"
+    rule: "Allow characters to challenge their representation and turn authorship into an in-world joke."
+    scope: "qc-kindergarten.story"
+    confidence: "repeated"
+    evidence: ["E009"]
+    counterexamples: []
+  - id: "T010"
+    rule: "Differentiate recurring characters by silhouette, color, hairstyle, prop, and posture before adding detail."
+    scope: "qc-kindergarten.visual"
+    confidence: "stable"
+    evidence: ["E001", "E002", "E003"]
+    counterexamples: []
+  - id: "T011"
+    rule: "Compose ensemble art as a captured incident with hierarchy and reaction lines, not an evenly weighted lineup."
+    scope: "qc-kindergarten.visual"
+    confidence: "repeated"
+    evidence: ["E010", "E013"]
+    counterexamples: []
+  - id: "T012"
+    rule: "Use bold genre transformations while preserving each recurring character's identity anchors."
+    scope: "qc-kindergarten.visual"
+    confidence: "repeated"
+    evidence: ["E011"]
+    counterexamples: []
+  - id: "T013"
+    rule: "Apply requested visual corrections locally and preserve unrelated approved composition."
+    scope: "qc-kindergarten.visual_revision"
+    confidence: "repeated"
+    evidence: ["E002", "E013"]
+    counterexamples: []
+  - id: "T014"
+    rule: "Render temporary people without visible eyes and at lower visual complexity than long-term characters."
+    scope: "qc-kindergarten.visual"
+    confidence: "stable"
+    evidence: ["E015"]
+    counterexamples: []
+  - id: "T015"
+    rule: "For consequential creative generation, present the concept first and wait for explicit approval."
+    scope: "qc-kindergarten.workflow"
+    confidence: "stable"
+    evidence: ["E010", "E014", "E015"]
+    counterexamples: []

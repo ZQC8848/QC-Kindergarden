@@ -1,0 +1,4 @@
+interface:
+  display_name: "QC Taste"
+  short_description: "延续并更新 QC 的证据化创作选择与审美判断"
+  default_prompt: "Use $qc-taste to create or evaluate this QC Kindergarten idea in a way that reflects QC's evidence-backed creative taste."
