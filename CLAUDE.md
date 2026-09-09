@@ -9,6 +9,7 @@
 - `.agents/skills/fieldnotes/` — 项目知识记录 skill。
 - `.agents/skills/story-illustrator/` — 故事插画提案、可复用资产准备与生成工作流。
 - `.agents/skills/qc-taste/` — 从人类创作决策中提炼并延续 QC 的可更新创作 taste；正式规则更新需要 QC 批准。
+- `.agents/skills/translate-en/` — 网站英文版翻译工作流：覆盖审计、文学性优先的译法、意译决策汇报。
 
 ## 当前研究方向
 

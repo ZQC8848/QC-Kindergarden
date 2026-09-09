@@ -35,10 +35,25 @@ export interface Character {
   hasPoster: boolean;
   hasExpressions: boolean;
   hasTurnaround: boolean;
+  /** true when 性格设定.en.md exists for this character */
+  translated: boolean;
   zh: Bible;
   en: Bible | null;
 }
 export type StoryKind = 'memory' | 'extra';
+export interface StoryMemoryText {
+  title: string;
+  summary: string;
+  impact: string | null;
+}
+/** Parsed from stories/<slug>.en.md when it exists. */
+export interface StoryEn {
+  title: string;
+  framing: string | null;
+  excerpt: string;
+  content: StoryContentBlock[];
+  memories: Record<string, StoryMemoryText>;
+}
 export interface StoryMemory {
   character: string;
   title: string;
@@ -65,6 +80,7 @@ export interface Story {
   illustrations: number[];
   excerpt: string;
   content: StoryContentBlock[];
+  en: StoryEn | null;
 }
 
 export const characters = charactersJson as Character[];
@@ -116,6 +132,19 @@ export function bibleFor(c: Character, lang: Lang): { bible: Bible; fallback: bo
 }
 
 export const nameOf = (c: Character, lang: Lang) => (lang === 'en' ? c.name.en : c.name.zh);
+
+/** Story text in the requested language, falling back to Chinese field by field. */
+export function storyText(st: Story, lang: Lang) {
+  const en = lang === 'en' ? st.en : null;
+  return {
+    translated: lang === 'zh' || Boolean(en),
+    title: en?.title ?? st.title,
+    excerpt: en?.excerpt || st.excerpt,
+    framing: en?.framing ?? st.framing,
+    content: en?.content ?? st.content,
+    memory: (m: StoryMemory): StoryMemory => ({ ...m, ...(en?.memories[m.character] ?? {}) }),
+  };
+}
 
 /** object-position for a cropped poster (see `focus` in characters.config.mjs). */
 export function focusOf(c: Pick<Character, 'focus'>, use: 'card' | 'avatar'): string {

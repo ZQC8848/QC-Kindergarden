@@ -1,0 +1,4 @@
+interface:
+  display_name: "英文翻译"
+  short_description: "把角色设定、故事和界面翻成有戏剧性的英文，翻完汇报所有意译决定"
+  default_prompt: "Use $translate-en to bring the English version of the QC Kindergarten site up to full coverage. Run the audit first, translate what is missing with literary rather than literal wording, rebuild, and then report every non-literal choice to me in Chinese with reasons and alternatives."

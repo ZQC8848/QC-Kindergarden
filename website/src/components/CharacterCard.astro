@@ -1,6 +1,6 @@
 ---
 import { Image, getImage } from 'astro:assets';
-import { posterOf, expressionsOf, nameOf, inkOf, focusOf, type Character } from '../lib/content';
+import { posterOf, expressionsOf, nameOf, inkOf, focusOf, bibleFor, type Character } from '../lib/content';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -21,7 +21,7 @@ const row = Math.floor(c.hoverCell / 3);
 // −(col + 0.125)·H, i.e. (col + 0.125) / 2.25 of that range. Rows are square, so row·50% is exact.
 const exprX = ((col + 0.125) / 2.25) * 100;
 const exprY = row * 50;
-const phrase = c.zh.phrases[0] ?? '';
+const phrase = bibleFor(c, lang).bible.phrases[0] ?? '';
 const href = `/${lang}/characters/${c.slug}/`;
 ---
 

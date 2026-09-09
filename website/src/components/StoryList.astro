@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { stories, characters, bySlug, leadImageOf, posterOf, nameOf, inkOf, focusOf, type Story } from '../lib/content';
+import { stories, characters, bySlug, leadImageOf, posterOf, nameOf, inkOf, focusOf, storyText, type Story } from '../lib/content';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -48,7 +48,9 @@ const groups = grouped
       <ul class="list">
         {group.list.map((st) => {
           const cover = leadImageOf(st);
-          const memory = perspective ? st.memories.find((m) => m.character === perspective) : null;
+          const tx = storyText(st, lang);
+          const rawMemory = perspective ? st.memories.find((m) => m.character === perspective) : null;
+          const memory = rawMemory ? tx.memory(rawMemory) : null;
           return (
             <li data-cast={st.cast.join(' ')}>
               <a class="story" href={`/${lang}/stories/${st.slug}/`}>
@@ -67,9 +69,9 @@ const groups = grouped
                 </div>
                 <div class="body">
                   <span class:list={["kind", `kind-${st.kind}`]}>{st.kind === 'memory' ? s.memoryEvents : s.extraTheater}</span>
-                  <h3>{st.title}</h3>
+                  <h3>{tx.title}</h3>
                   {memory?.title && <p class="memory-title">“{memory.title}”</p>}
-                  <p class="excerpt">{memory?.summary || st.excerpt}</p>
+                  <p class="excerpt">{memory?.summary || tx.excerpt}</p>
                   <div class="card-foot">
                     <div class="cast" aria-label={s.cast}>
                       {st.cast.map((slug) => {

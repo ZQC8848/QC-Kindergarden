@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
-import { stories, bySlug, coverOf, illustrationOf, posterOf, nameOf, sceneByFile, placeName, focusOf } from '../../../lib/content';
+import { stories, bySlug, coverOf, illustrationOf, posterOf, nameOf, sceneByFile, placeName, focusOf, storyText } from '../../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../../i18n';
 
 export function getStaticPaths() {
@@ -12,14 +12,15 @@ const slug = Astro.params.slug as string;
 const st = stories.find((x) => x.slug === slug)!;
 const s = t(lang);
 const cover = coverOf(st.slug);
+const tx = storyText(st, lang);
 const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
 ---
 
-<Base lang={lang} title={`${st.title} · ${s.siteName}`} description={st.excerpt} altPath={`/${otherLang(lang)}/stories/${slug}/`}>
+<Base lang={lang} title={`${tx.title} · ${s.siteName}`} description={tx.excerpt} altPath={`/${otherLang(lang)}/stories/${slug}/`}>
   <article class="story wrap">
     <p class="crumbs"><a href={`/${lang}/#stories`}>{s.storiesTitle}</a></p>
     <p class:list={["kind", `kind-${st.kind}`]}>{st.kind === 'memory' ? s.memoryEvents : s.extraTheater}</p>
-    <h1>{st.title}</h1>
+    <h1>{tx.title}</h1>
     <div class="meta">
       <span>{st.date}</span>
       {storyPlaces.length > 0 && (
@@ -53,10 +54,10 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
         <Image src={cover} alt="" widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="eager" />
       </figure>
     )}
-    {lang === 'en' && <p class="notice">{s.notTranslated}</p>}
-    {st.kind === 'extra' && <p class="notice extra-notice">{st.framing || s.extraNotice}</p>}
+    {!tx.translated && <p class="notice">{s.notTranslated}</p>}
+    {st.kind === 'extra' && <p class="notice extra-notice">{tx.framing || s.extraNotice}</p>}
     <div class="story-flow">
-      {st.content.map((block) => {
+      {tx.content.map((block) => {
         if (block.type === 'html') return <div class="prose text" set:html={block.html} />;
         const image = illustrationOf(st.slug, block.panel);
         return image && (
@@ -75,7 +76,8 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
           <p>{s.memoriesSub}</p>
         </header>
         <div class="memory-list">
-          {st.memories.map((memory) => {
+          {st.memories.map((raw) => {
+            const memory = tx.memory(raw);
             const c = bySlug[memory.character];
             const poster = c && posterOf(memory.character);
             return c && (

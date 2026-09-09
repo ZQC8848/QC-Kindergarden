@@ -81,6 +81,13 @@ function parseStoryContent(body) {
   return blocks;
 }
 
+function excerptOf(body) {
+  return body
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .find((l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**') && !l.startsWith('<!--'));
+}
+
 const knownSlugs = new Set(characters.map((c) => c.slug));
 function resolveSlug(value) {
   const raw = String(value).trim();
@@ -97,47 +104,69 @@ function linkNames(html) {
   });
 }
 
+// English bibles (性格设定.en.md) use these headings; they map onto the Chinese canonical
+// section names so descriptionOrder / relations / phrases resolve for both languages.
+// Keep this table in sync with .agents/skills/translate-en/SKILL.md.
+const SECTION_ALIASES = {
+  'Basics': '基本信息',
+  'Core personality': '性格核心',
+  'Personality in the design': '外形里的性格线索',
+  'Habits': '行为习惯',
+  'Expressions and moods': '表情与情绪',
+  'Likes / dislikes': '喜欢 / 讨厌',
+  'Strengths and growth': '优点与课题',
+  'Meaning of the props': '道具的意义',
+  'Relationships': '和其他人的相处',
+};
+const canonTitle = (t) => SECTION_ALIASES[t] ?? t;
+const isExtra = (s) => s.canon.startsWith('额外设定') || /^Extra(\s[^:：]+)?[:：]/.test(s.title);
+const extraLabel = (s) =>
+  s.title.replace(/^额外设定[一二三四五六七八九十]?[:：]?\s*/, '').replace(/^Extra(\s[^:：]+)?[:：]\s*/, '') || s.title;
+
 function parseBible(md) {
   const lines = md.split(/\r?\n/);
   const titleLine = lines.find((l) => l.startsWith('# ')) ?? '';
-  const tagline = (md.match(/^> 一句话：(.+)$/m)?.[1] ?? '').trim();
+  const tagline = (md.match(/^> (?:一句话|One line)[:：]\s*(.+)$/m)?.[1] ?? '').trim();
 
   const sections = [];
   let cur = null;
   for (const line of lines) {
     if (line.startsWith('## ')) {
-      cur = { title: line.slice(3).trim(), lines: [] };
+      const title = line.slice(3).trim();
+      cur = { title, canon: canonTitle(title), lines: [] };
       sections.push(cur);
     } else if (cur) cur.lines.push(line);
   }
+  const bySection = (canon) => sections.find((s) => s.canon === canon);
 
   const basic = {};
-  const basicSec = sections.find((s) => s.title === '基本信息');
+  const basicSec = bySection('基本信息');
   if (basicSec) {
     for (const l of basicSec.lines) {
       const m = l.match(/^\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|$/);
-      if (m && m[1] !== '项目' && !/^-+$/.test(m[1])) basic[m[1]] = m[2];
+      if (m && !['项目', 'Item', 'Field'].includes(m[1]) && !/^-+$/.test(m[1])) basic[m[1]] = m[2];
     }
   }
 
-  const habits = sections.find((s) => s.title === '行为习惯');
-  const phraseLine = habits?.lines.find((l) => l.includes('口头禅'));
+  const habits = bySection('行为习惯');
+  const phraseLine = habits?.lines.find((l) => l.includes('口头禅') || /catchphrase/i.test(l));
+  // Chinese catchphrases stay short by nature; English ones need more room to stay quotable.
   const phrases = phraseLine
-    ? [...phraseLine.matchAll(/"([^"]+)"/g)].map((m) => m[1]).filter((p) => p.length <= 24)
+    ? [...phraseLine.matchAll(/"([^"]+)"/g)].map((m) => m[1]).filter((p) => p.length <= (/[\u4e00-\u9fff]/.test(p) ? 24 : 60))
     : [];
 
   const toHtml = (s) => marked.parse(s.lines.join('\n').trim());
 
   const description = descriptionOrder
-    .map((t) => sections.find((s) => s.title === t))
+    .map((t) => bySection(t))
     .filter(Boolean)
     .map((s) => ({ title: s.title, html: toHtml(s) }));
 
   const extras = sections
-    .filter((s) => s.title.startsWith('额外设定'))
-    .map((s) => ({ title: s.title.replace(/^额外设定[一二三四五六七八九十]?[:：]?\s*/, '') || s.title, html: toHtml(s) }));
+    .filter(isExtra)
+    .map((s) => ({ title: extraLabel(s), html: toHtml(s) }));
 
-  const relSec = sections.find((s) => s.title === '和其他人的相处');
+  const relSec = bySection('和其他人的相处');
   const relations = relSec
     ? relSec.lines
         .filter((l) => l.startsWith('- '))
@@ -191,6 +220,7 @@ for (const c of characters) {
     hoverCell: c.hoverCell,
     focus: c.focus ?? null,
     name: { zh: zh.basic['名字'] ?? c.folder.split('-')[0], en: c.en.name },
+    translated: Boolean(en),
     mbti: zh.mbti,
     hasPoster: poster,
     hasExpressions: Boolean(expr),
@@ -207,7 +237,7 @@ console.log(`[sync] ${charOut.length} characters`);
 const storyOut = [];
 if (fs.existsSync(STORIES)) {
   for (const f of fs.readdirSync(STORIES)) {
-    if (!f.endsWith('.md') || f === 'README.md') continue;
+    if (!f.endsWith('.md') || f === 'README.md' || f.endsWith('.en.md')) continue;
     const stem = f.replace(/\.md$/, '');
     const raw = fs.readFileSync(path.join(STORIES, f), 'utf8');
     const { data, content } = matter(raw);
@@ -236,10 +266,33 @@ if (fs.existsSync(STORIES)) {
     for (const illustration of illustrations) {
       copyIfNewer(illustration.src, path.join(outAssets, 'stories', `${stem}-p${illustration.panel}.png`));
     }
-    const excerpt = body
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .find((l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**'));
+    const excerpt = excerptOf(body);
+    // Optional English twin: stories/<stem>.en.md with the same frontmatter shape
+    // (title, framing, memories.<slug>.{title,summary,impact}) and a translated body
+    // that keeps the <!-- illustration:N|caption --> markers.
+    const enPath = path.join(STORIES, `${stem}.en.md`);
+    let en = null;
+    if (fs.existsSync(enPath)) {
+      const twin = matter(fs.readFileSync(enPath, 'utf8'));
+      const enBody = twin.content.replace(/^\s*# .+\n/, '');
+      const enMemories = {};
+      for (const [name, value] of Object.entries(twin.data.memories ?? {})) {
+        const slug = resolveSlug(name);
+        if (!slug || !value || typeof value !== 'object') continue;
+        enMemories[slug] = {
+          title: String(value.title ?? ''),
+          summary: String(value.summary ?? ''),
+          impact: value.impact ? String(value.impact) : null,
+        };
+      }
+      en = {
+        title: String(twin.data.title ?? data.title ?? stem),
+        framing: twin.data.framing ? String(twin.data.framing) : null,
+        excerpt: excerptOf(enBody) ?? '',
+        content: parseStoryContent(enBody),
+        memories: enMemories,
+      };
+    }
     // `location` may be one scene or a list of scenes; unknown names are dropped with a warning.
     const rawLoc = data.location;
     const locations = (Array.isArray(rawLoc) ? rawLoc : rawLoc ? [rawLoc] : [])
@@ -266,6 +319,7 @@ if (fs.existsSync(STORIES)) {
       illustrations: illustrations.map(({ panel }) => panel),
       excerpt: excerpt ?? '',
       content: parseStoryContent(body),
+      en,
     });
   }
 }
