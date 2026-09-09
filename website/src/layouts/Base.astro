@@ -49,7 +49,11 @@ const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};`
     <footer class="footer">
       <div class="wrap footer-inner">
         <p>{s.siteName}. {s.footer}</p>
-        <a href="https://github.com/ZQC8848/QC-Kindergarten" rel="noopener">GitHub</a>
+        <nav class="footer-links" aria-label="links">
+          <a href="https://github.com/ZQC8848/QC-Kindergarten" rel="noopener">GitHub</a>
+          {/* Small easter egg: the author's site only shows up on the English side. */}
+          {lang === 'en' && <a href="https://qinchuan.vercel.app/" rel="noopener author">{s.author}</a>}
+        </nav>
       </div>
     </footer>
   </body>
@@ -113,6 +117,10 @@ const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};`
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
+  }
+  .footer-links {
+    display: flex;
+    gap: 1.25rem;
   }
   .footer a {
     font-weight: 700;

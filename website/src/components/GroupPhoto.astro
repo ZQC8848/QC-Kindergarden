@@ -14,7 +14,8 @@ const spots = groupLayers
   .filter((l) => l.slug && bySlug[l.slug]);
 ---
 
-<figure class="photo">
+<figure class="photo" data-group-photo>
+  <div class="canvas">
   {groupPhoto && (
     <Image
       src={groupPhoto}
@@ -39,8 +40,22 @@ const spots = groupLayers
       );
     })}
   </ul>
+  </div>
   <figcaption>{s.hero.hint}</figcaption>
 </figure>
+
+<script>
+  // On narrow screens the canvas is wider than the frame and scrolls sideways.
+  // Start centred so the first view matches the old centre crop.
+  document.querySelectorAll<HTMLElement>('[data-group-photo]').forEach((el) => {
+    const centre = () => {
+      const extra = el.scrollWidth - el.clientWidth;
+      if (extra > 0) el.scrollLeft = extra / 2;
+    };
+    centre();
+    window.addEventListener('resize', centre, { passive: true });
+  });
+</script>
 
 <style>
   .photo {
@@ -51,7 +66,12 @@ const spots = groupLayers
     box-shadow: var(--shadow);
     background: var(--panel-2);
   }
-  .photo img {
+  .canvas {
+    position: relative;
+    width: 100%;
+  }
+  .canvas img {
+    display: block;
     width: 100%;
     height: auto;
     aspect-ratio: 16 / 9;
@@ -115,17 +135,20 @@ const spots = groupLayers
     color: var(--on-accent);
   }
   @media (hover: none) {
-    /* No pointer to hover with: keep every dot and tag visible. */
+    /* Touch screens: dots only, always visible, with a bigger tap target. */
     .spots li {
       opacity: 1;
       transition: none;
     }
+    .spots a {
+      padding: 0.5rem;
+    }
     .dot {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
     }
     .label {
-      font-size: 0.7rem;
+      display: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -150,9 +173,19 @@ const spots = groupLayers
     figcaption {
       display: none;
     }
-    /* mobile crop keeps the centre; edge characters (QC, 点儿, whiskle) are meant to be cut (GROUP-PHOTO.md) */
-    .photo img {
-      aspect-ratio: 4 / 3;
+    /* Narrow screens: show the photo at 4:3 frame height and let it scroll sideways.
+       The canvas keeps the full 16:9 image, so the dots travel with it. */
+    .photo {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .photo::-webkit-scrollbar {
+      display: none;
+    }
+    .canvas {
+      width: calc(100% * 4 / 3);
     }
   }
 </style>
