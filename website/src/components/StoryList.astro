@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { stories, characters, bySlug, coverOf, posterOf, nameOf, inkOf, type Story } from '../lib/content';
+import { stories, characters, bySlug, leadImageOf, posterOf, nameOf, inkOf, focusOf, type Story } from '../lib/content';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -47,7 +47,7 @@ const groups = grouped
       )}
       <ul class="list">
         {group.list.map((st) => {
-          const cover = coverOf(st.slug);
+          const cover = leadImageOf(st);
           const memory = perspective ? st.memories.find((m) => m.character === perspective) : null;
           return (
             <li data-cast={st.cast.join(' ')}>
@@ -60,7 +60,7 @@ const groups = grouped
                       {st.cast.slice(0, 3).map((slug) => {
                         const character = bySlug[slug];
                         const poster = character && posterOf(slug);
-                        return poster && <Image src={poster} alt="" width={320} height={420} loading="lazy" />;
+                        return poster && <Image src={poster} alt="" width={320} loading="lazy" style={`object-position:${focusOf(character, 'avatar')};`} />;
                       })}
                     </div>
                   )}
@@ -77,7 +77,7 @@ const groups = grouped
                         const p = c && posterOf(slug);
                         return c && (
                           <span class="avatar" style={`--accent:${c.accent};`} title={nameOf(c, lang)}>
-                            {p && <Image src={p} alt={nameOf(c, lang)} width={64} height={64} loading="lazy" />}
+                            {p && <Image src={p} alt={nameOf(c, lang)} width={96} loading="lazy" style={`object-position:${focusOf(c, 'avatar')};`} />}
                           </span>
                         );
                       })}

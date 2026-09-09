@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
-import { stories, bySlug, coverOf, posterOf, nameOf, sceneMeta } from '../../../lib/content';
+import { stories, bySlug, coverOf, illustrationOf, posterOf, nameOf, sceneByFile, placeName, focusOf } from '../../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../../i18n';
 
 export function getStaticPaths() {
@@ -11,8 +11,13 @@ const lang = Astro.params.lang as Lang;
 const slug = Astro.params.slug as string;
 const st = stories.find((x) => x.slug === slug)!;
 const s = t(lang);
-const cover = coverOf(st.slug);
-const place = sceneMeta.find((r) => r.file === st.location);
+const explicitCover = coverOf(st.slug);
+const illustrations = st.illustrations
+  .map((panel) => ({ panel, image: illustrationOf(st.slug, panel) }))
+  .filter((item) => item.image);
+const cover = explicitCover ?? illustrations[0]?.image;
+const inlineIllustrations = explicitCover ? illustrations : illustrations.slice(1);
+const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
 ---
 
 <Base lang={lang} title={`${st.title} · ${s.siteName}`} description={st.excerpt} altPath={`/${otherLang(lang)}/stories/${slug}/`}>
@@ -22,7 +27,17 @@ const place = sceneMeta.find((r) => r.file === st.location);
     <h1>{st.title}</h1>
     <div class="meta">
       <span>{st.date}</span>
-      {place && <span>{s.location}: {lang === 'en' ? place.en : place.zh}</span>}
+      {storyPlaces.length > 0 && (
+        <span class="places">
+          {s.location}:
+          {storyPlaces.map((p, i) => (
+            <>
+              <a href={`/${lang}/places/${p.slug}/`}>{placeName(p, lang)}</a>
+              {i < storyPlaces.length - 1 && <span class="sep">·</span>}
+            </>
+          ))}
+        </span>
+      )}
     </div>
     <div class="cast" aria-label={s.cast}>
       {st.cast.map((cs) => {
@@ -31,7 +46,7 @@ const place = sceneMeta.find((r) => r.file === st.location);
         return (
           c && (
             <a class="member" href={`/${lang}/characters/${cs}/`} style={`--accent:${c.accent};`}>
-              {p && <Image src={p} alt="" width={80} height={80} loading="lazy" />}
+              {p && <Image src={p} alt="" width={96} loading="lazy" style={`object-position:${focusOf(c, 'avatar')};`} />}
               <span>{nameOf(c, lang)}</span>
             </a>
           )
@@ -47,6 +62,20 @@ const place = sceneMeta.find((r) => r.file === st.location);
     {st.kind === 'extra' && <p class="notice extra-notice">{st.framing || s.extraNotice}</p>}
     <div class="prose text" set:html={st.html} />
 
+    {inlineIllustrations.length > 0 && (
+      <section class="illustration-section" aria-labelledby="story-illustrations">
+        <h2 id="story-illustrations">{s.storyIllustrations}</h2>
+        <div class="illustration-list">
+          {inlineIllustrations.map(({ panel, image }) => (
+            <figure>
+              <Image src={image!} alt={`${s.illustration} ${panel}`} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="lazy" />
+              <figcaption>{s.illustration} {panel}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
     {st.kind === 'memory' && st.memories.length > 0 && (
       <section class="memory-section">
         <header>
@@ -59,13 +88,13 @@ const place = sceneMeta.find((r) => r.file === st.location);
             const poster = c && posterOf(memory.character);
             return c && (
               <article class="memory" style={`--memory-accent:${c.accent};`}>
-                <div class="memory-person">
-                  {poster && <Image src={poster} alt="" width={96} height={96} loading="lazy" />}
+                <a class="memory-person" href={`/${lang}/characters/${c.slug}/`} aria-label={nameOf(c, lang)}>
+                  {poster && <Image src={poster} alt="" width={128} loading="lazy" style={`object-position:${focusOf(c, 'avatar')};`} />}
                   <div>
                     <h3>{nameOf(c, lang)}</h3>
                     <span>{s.knowledge[memory.knowledge]}</span>
                   </div>
-                </div>
+                </a>
                 <div class="memory-copy">
                   <h3>“{memory.title}”</h3>
                   <p>{memory.summary}</p>
@@ -101,10 +130,29 @@ const place = sceneMeta.find((r) => r.file === st.location);
   .meta {
     margin-top: 0.8rem;
     display: flex;
-    gap: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
     color: var(--ink-2);
     font-weight: 700;
     font-size: 0.95rem;
+  }
+  .meta .places {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35em;
+  }
+  .meta .places a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
+  }
+  .meta .places a:hover {
+    text-decoration-color: currentColor;
+  }
+  .meta .sep {
+    color: var(--ink-3);
   }
   .cast {
     margin-top: 1.25rem;
@@ -158,6 +206,34 @@ const place = sceneMeta.find((r) => r.file === st.location);
   .text :global(hr) {
     margin: 2.2em 0;
   }
+  .illustration-section {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--line-strong);
+  }
+  .illustration-list {
+    margin-top: 1.25rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .illustration-list figure {
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--panel);
+    box-shadow: var(--shadow-sm);
+  }
+  .illustration-list img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .illustration-list figcaption {
+    padding: 0.65rem 1rem;
+    color: var(--ink-3);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
   .memory-section {
     margin-top: 4rem;
     padding-top: 3rem;
@@ -173,17 +249,53 @@ const place = sceneMeta.find((r) => r.file === st.location);
     gap: 1rem;
   }
   .memory {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(170px, 2fr) minmax(0, 5fr);
     gap: 1.5rem;
     padding: 1.25rem;
     border-radius: var(--radius);
     background: color-mix(in srgb, var(--memory-accent) 10%, var(--panel));
+    transition: background 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  }
+  /* The whole card links to the character: the person block is the link and its ::after stretches over the card. */
+  .memory:has(.memory-person:hover),
+  .memory:has(.memory-person:focus-visible) {
+    background: color-mix(in srgb, var(--memory-accent) 18%, var(--panel));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .memory:has(.memory-person:focus-visible) {
+    outline: 2px solid var(--memory-accent);
+    outline-offset: 2px;
   }
   .memory-person {
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+  }
+  .memory-person::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+  }
+  .memory-person:hover h3 {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .memory {
+      transition: none;
+    }
+    .memory:has(.memory-person:hover) {
+      transform: none;
+    }
   }
   .memory-person img {
     width: 54px;

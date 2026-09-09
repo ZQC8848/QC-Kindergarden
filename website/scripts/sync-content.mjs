@@ -48,6 +48,24 @@ function latestVersion(dir, prefix, suffixRe) {
   return hits.length ? path.join(dir, hits[0].f) : null;
 }
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function latestIllustrations(dir, stem) {
+  if (!fs.existsSync(dir)) return [];
+  const pattern = new RegExp(`^${escapeRe(stem)}-p(\\d+)-v(\\d+)\\.png$`);
+  const latestByPanel = new Map();
+  for (const file of fs.readdirSync(dir)) {
+    const match = file.match(pattern);
+    if (!match) continue;
+    const panel = Number(match[1]);
+    const version = Number(match[2]);
+    const current = latestByPanel.get(panel);
+    if (!current || version > current.version) {
+      latestByPanel.set(panel, { panel, version, src: path.join(dir, file) });
+    }
+  }
+  return [...latestByPanel.values()].sort((a, b) => a.panel - b.panel);
+}
+
 const knownSlugs = new Set(characters.map((c) => c.slug));
 function resolveSlug(value) {
   const raw = String(value).trim();
@@ -156,6 +174,7 @@ for (const c of characters) {
     folder: c.folder,
     accent: c.accent,
     hoverCell: c.hoverCell,
+    focus: c.focus ?? null,
     name: { zh: zh.basic['名字'] ?? c.folder.split('-')[0], en: c.en.name },
     mbti: zh.mbti,
     hasPoster: poster,
@@ -195,17 +214,33 @@ if (fs.existsSync(STORIES)) {
           : null;
       })
       .filter(Boolean);
-    const cover = latestVersion(path.join(STORIES, 'assets'), `${stem}-v`, '(\\d+)\\.png');
+    const storyAssets = path.join(STORIES, 'assets');
+    const cover = latestVersion(storyAssets, `${stem}-v`, '(\\d+)\\.png');
+    const illustrations = latestIllustrations(storyAssets, stem);
     if (cover) copyIfNewer(cover, path.join(outAssets, 'stories', `${stem}.png`));
+    for (const illustration of illustrations) {
+      copyIfNewer(illustration.src, path.join(outAssets, 'stories', `${stem}-p${illustration.panel}.png`));
+    }
     const excerpt = body
       .split(/\r?\n/)
       .map((l) => l.trim())
       .find((l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**'));
+    // `location` may be one scene or a list of scenes; unknown names are dropped with a warning.
+    const rawLoc = data.location;
+    const locations = (Array.isArray(rawLoc) ? rawLoc : rawLoc ? [rawLoc] : [])
+      .map((l) => String(l).trim())
+      .filter(Boolean)
+      .filter((l) => {
+        const known = scenes.some((sc) => sc.file === l);
+        if (!known) console.warn(`[sync] ${f}: unknown location "${l}" (not in characters.config.mjs scenes)`);
+        return known;
+      });
     storyOut.push({
       slug: stem,
       title: data.title ?? stem,
       cast,
-      location: data.location ?? null,
+      location: locations[0] ?? null,
+      locations,
       date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : String(data.date ?? '').slice(0, 10),
       source: data.source ?? null,
       kind: data.type === 'extra' ? 'extra' : 'memory',
@@ -213,6 +248,7 @@ if (fs.existsSync(STORIES)) {
       framing: data.framing ? String(data.framing) : null,
       memories,
       hasCover: Boolean(cover),
+      illustrations: illustrations.map(({ panel }) => panel),
       excerpt: excerpt ?? '',
       html: marked.parse(body),
     });

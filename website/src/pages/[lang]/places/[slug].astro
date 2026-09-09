@@ -1,0 +1,197 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../../layouts/Base.astro';
+import StoryList from '../../../components/StoryList.astro';
+import { places, sceneBySlug, sceneOf, placeName, storiesAt } from '../../../lib/content';
+import { t, langs, otherLang, type Lang } from '../../../i18n';
+
+export function getStaticPaths() {
+  return langs.flatMap((lang) => places.map((sc) => ({ params: { lang, slug: sc.slug } })));
+}
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.slug as string;
+const sc = sceneBySlug[slug];
+const s = t(lang);
+const name = placeName(sc, lang);
+const img = sceneOf(sc.file);
+const here = storiesAt(sc.file);
+const memoryStories = here.filter((st) => st.kind === 'memory');
+const extraStories = here.filter((st) => st.kind === 'extra');
+const idx = places.findIndex((x) => x.slug === slug);
+const prev = places[(idx - 1 + places.length) % places.length];
+const next = places[(idx + 1) % places.length];
+const others = places.filter((x) => x.slug !== slug);
+const countLabel = `${here.length} ${here.length === 1 ? s.storyCount.one : s.storyCount.many}`;
+---
+
+<Base lang={lang} title={`${name} · ${s.siteName}`} description={`${name} · ${countLabel}`} altPath={`/${otherLang(lang)}/places/${slug}/`}>
+  <article class="place wrap">
+    <header class="head">
+      <p class="crumbs"><a href={`/${lang}/#places`}>{s.placesTitle}</a></p>
+      <div class="title-row">
+        <h1>{name}</h1>
+        <span class="chip">{countLabel}</span>
+      </div>
+      <nav class="pager" aria-label={s.placesTitle}>
+        <a href={`/${lang}/places/${prev.slug}/`} rel="prev">← {placeName(prev, lang)}</a>
+        <a href={`/${lang}/places/${next.slug}/`} rel="next">{placeName(next, lang)} →</a>
+      </nav>
+    </header>
+
+    {img && (
+      <figure class="hero">
+        <Image src={img} alt={name} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="eager" fetchpriority="high" />
+      </figure>
+    )}
+
+    <section class="stories-here">
+      <h2>{s.placeStories}</h2>
+      {here.length === 0 && <p class="empty">{s.placeNoStories}</p>}
+      {memoryStories.length > 0 && (
+        <div class="group">
+          <h3>{s.memoryEvents}</h3>
+          <p class="sub">{s.memoryEventsSub}</p>
+          <StoryList lang={lang} items={memoryStories} />
+        </div>
+      )}
+      {extraStories.length > 0 && (
+        <div class="group">
+          <h3>{s.extraTheater}</h3>
+          <p class="sub">{s.extraTheaterSub}</p>
+          <StoryList lang={lang} items={extraStories} />
+        </div>
+      )}
+    </section>
+
+    <section class="others">
+      <h2>{s.otherPlaces}</h2>
+      <ul class="chips">
+        {others.map((o) => {
+          const n = storiesAt(o.file).length;
+          return (
+            <li>
+              <a href={`/${lang}/places/${o.slug}/`}>
+                {placeName(o, lang)}
+                {n > 0 && <span class="n">{n}</span>}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .place {
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+    max-width: 960px;
+  }
+  .crumbs {
+    font-weight: 700;
+    color: var(--ink-2);
+    margin-bottom: 0.5rem;
+  }
+  .crumbs a {
+    color: inherit;
+  }
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+  .chip {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--ink-2);
+    background: var(--panel);
+    padding: 0.25em 0.8em;
+    border-radius: 999px;
+  }
+  .pager {
+    margin-top: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .pager a {
+    color: var(--ink-2);
+  }
+  .pager a:hover {
+    color: var(--ink);
+  }
+  .hero {
+    margin: 1.5rem 0 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--panel-2);
+  }
+  .hero img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+  .stories-here {
+    margin-top: clamp(2rem, 5vw, 3.5rem);
+  }
+  .stories-here h2,
+  .others h2 {
+    margin-bottom: 0.75rem;
+  }
+  .group + .group {
+    margin-top: 2rem;
+  }
+  .group h3 {
+    font-size: 1.15rem;
+  }
+  .group .sub {
+    margin: 0.25rem 0 1rem;
+    color: var(--ink-2);
+  }
+  .empty {
+    color: var(--ink-2);
+  }
+  .others {
+    margin-top: clamp(2rem, 5vw, 3.5rem);
+    padding-bottom: 2rem;
+  }
+  .chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .chips a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35em 0.9em;
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+  .chips a:hover,
+  .chips a:focus-visible {
+    background: var(--panel-2);
+  }
+  .chips .n {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--ink-2);
+    background: rgba(255, 250, 246, 0.9);
+    padding: 0.05em 0.5em;
+    border-radius: 999px;
+  }
+</style>

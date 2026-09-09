@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { groupPhoto, groupLayers, bySlug, nameOf, inkOf } from '../lib/content';
+import { groupPhoto, groupLayers, bySlug, nameOf, onAccent } from '../lib/content';
 import { nameToSlug } from '../data/characters.config.mjs';
 import { t, type Lang } from '../i18n';
 
@@ -26,10 +26,11 @@ const spots = groupLayers
     />
   )}
   <ul class="spots" aria-label={s.charactersTitle}>
-    {spots.map((p) => {
+    {spots.map((p, i) => {
       const c = bySlug[p.slug];
+      const at = p.spot ?? { x: p.x, y: p.y };
       return (
-        <li style={`left:${p.x * 100}%;top:${p.y * 100}%;--accent:${c.accent};--accent-ink:${inkOf(c.accent)};`}>
+        <li style={`left:${at.x * 100}%;top:${at.y * 100}%;--i:${i};--accent:${c.accent};--on-accent:${onAccent(c.accent)};`}>
           <a href={`/${lang}/characters/${c.slug}/`} aria-label={nameOf(c, lang)}>
             <span class="dot" />
             <span class="label">{nameOf(c, lang)}</span>
@@ -64,9 +65,17 @@ const spots = groupLayers
     inset: 0;
     pointer-events: none;
   }
+  /* Dots and name tags stay hidden until the pointer is over the photo (or a dot has focus). */
   .spots li {
     position: absolute;
     transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    transition-delay: calc(var(--i, 0) * 25ms);
+  }
+  .photo:hover .spots li,
+  .photo:focus-within .spots li {
+    opacity: 1;
   }
   .spots a {
     pointer-events: auto;
@@ -93,9 +102,7 @@ const spots = groupLayers
     padding: 0.15em 0.6em;
     border-radius: 999px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.2s ease;
     white-space: nowrap;
   }
   .spots a:hover .dot,
@@ -104,13 +111,14 @@ const spots = groupLayers
   }
   .spots a:hover .label,
   .spots a:focus-visible .label {
-    opacity: 1;
-    transform: none;
+    background: var(--accent);
+    color: var(--on-accent);
   }
   @media (hover: none) {
-    .label {
+    /* No pointer to hover with: keep every dot and tag visible. */
+    .spots li {
       opacity: 1;
-      transform: none;
+      transition: none;
     }
     .dot {
       width: 12px;
@@ -121,6 +129,7 @@ const spots = groupLayers
     }
   }
   @media (prefers-reduced-motion: reduce) {
+    .spots li,
     .dot,
     .label {
       transition: none;

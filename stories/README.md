@@ -16,7 +16,7 @@
 ---
 title: 故事标题
 cast: [Haide, 艾莎, QC]        # 出场角色，用 character reference/ 下的文件夹名前缀
-location: courtyard             # 对应 Scene Reference/ 的场景名，可空
+location: Courtyard             # 对应 Scene Reference/ 的场景名，可空；多个地点写成列表 [NapRoom, HighwayNight]
 date: 2026-09-08                # 故事写成的日期
 source: user | claude | gpt     # 谁写的
 type: memory | extra            # 记忆事件或番外剧场

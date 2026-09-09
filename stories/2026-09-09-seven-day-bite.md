@@ -1,7 +1,7 @@
 ---
 title: 七天追咬事件
 cast: [haide, qc, aisha, mushi]
-location: EntryLobby
+location: [EntryLobby, PrivateVillaPool]
 date: 2026-09-09
 source: user
 polish: codex
@@ -48,7 +48,7 @@ Haide 当然听懂了。他愣了一秒，眉毛竖起，扑上去咬住 QC 的�
 
 Haide 松开嘴，歪头看着他。意思很明确：还有呢？
 
-最后，QC 答应每个月最后一天开金色法拉利带他参加海边派对。Haide 对这份补偿非常满意。艾莎则在红书里写下：
+最后，QC 答应每个月最后一天开金色敞篷法拉利带他参加海边派对。Haide 对这份补偿非常满意。艾莎则在红书里写下：
 
 “处理方案 014：转交董事长。结果：失败。董事长不可靠。”
 

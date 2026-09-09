@@ -1,6 +1,6 @@
 ---
 import { Image, getImage } from 'astro:assets';
-import { posterOf, expressionsOf, nameOf, inkOf, type Character } from '../lib/content';
+import { posterOf, expressionsOf, nameOf, inkOf, focusOf, type Character } from '../lib/content';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -15,6 +15,12 @@ const exprMeta = expressionsOf(c.slug);
 const expr = exprMeta ? await getImage({ src: exprMeta, width: 720, format: 'webp' }) : null;
 const col = c.hoverCell % 3;
 const row = Math.floor(c.hoverCell / 3);
+// The sheet is 3 square cells wide and is sized to the face's height (background-size: auto 300%),
+// so each cell is wider than the 3:4 face. background-position-x as a percentage maps onto
+// (face width − image width) = (0.75 − 3)·H = −2.25·H; centring cell `col` needs an offset of
+// −(col + 0.125)·H, i.e. (col + 0.125) / 2.25 of that range. Rows are square, so row·50% is exact.
+const exprX = ((col + 0.125) / 2.25) * 100;
+const exprY = row * 50;
 const phrase = c.zh.phrases[0] ?? '';
 const href = `/${lang}/characters/${c.slug}/`;
 ---
@@ -32,13 +38,14 @@ const href = `/${lang}/characters/${c.slug}/`;
         widths={[320, 480, 640]}
         sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
         loading={index < 4 ? 'eager' : 'lazy'}
+        style={`object-position:${focusOf(c, 'card')};`}
       />
     )}
     {expr && (
       <div
         class="expr"
         aria-hidden="true"
-        style={`background-image:url(${expr.src});background-position:${col * 50}% ${row * 50}%;`}
+        style={`background-image:url(${expr.src});background-position:${exprX.toFixed(2)}% ${exprY}%;`}
       />
     )}
   </div>

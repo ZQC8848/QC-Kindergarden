@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
 import StoryList from '../../../components/StoryList.astro';
-import { characters, bySlug, posterOf, turnaroundOf, stories, bibleFor, nameOf, inkOf } from '../../../lib/content';
+import { characters, bySlug, posterOf, turnaroundOf, stories, bibleFor, nameOf, inkOf, focusOf } from '../../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../../i18n';
 
 export function getStaticPaths() {
@@ -39,7 +39,7 @@ const sectionId = (title: string, i: number) => `s-${i}`;
     <header class="top wrap">
       <div class="poster plate">
         {poster && (
-          <Image src={poster} alt={`${name} poster`} widths={[480, 720, 960]} sizes="(max-width: 860px) 100vw, 420px" loading="eager" fetchpriority="high" />
+          <Image src={poster} alt={`${name} poster`} widths={[480, 720, 960]} sizes="(max-width: 860px) 100vw, 420px" loading="eager" fetchpriority="high" style={`object-position:${focusOf(c, 'card')};`} />
         )}
       </div>
       <div class="intro">
@@ -137,7 +137,7 @@ const sectionId = (title: string, i: number) => `s-${i}`;
                       return (
                         tc && (
                           <a href={`/${lang}/characters/${tslug}/`} class="face" style={`--accent:${tc.accent};`} title={nameOf(tc, lang)}>
-                            {tp && <Image src={tp} alt={nameOf(tc, lang)} width={72} height={72} loading="lazy" />}
+                            {tp && <Image src={tp} alt={nameOf(tc, lang)} width={96} loading="lazy" style={`object-position:${focusOf(tc, 'avatar')};`} />}
                           </a>
                         )
                       );

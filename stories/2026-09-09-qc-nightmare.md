@@ -1,7 +1,7 @@
 ---
 title: QC 的连环噩梦
 cast: [qc, haide, mimi, whiskle, aisha, ruanruan, luyao]
-location:
+location: [NapRoom, HighwayNight, Courtyard]
 date: 2026-09-09
 source: user
 polish: codex

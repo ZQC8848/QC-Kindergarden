@@ -1,26 +1,33 @@
 ---
 import { Image } from 'astro:assets';
-import { sceneMeta, sceneOf } from '../lib/content';
-import type { Lang } from '../i18n';
+import { sceneMeta, sceneOf, places, placeName, storiesAt } from '../lib/content';
+import { t, type Lang } from '../i18n';
 
 interface Props {
   lang: Lang;
 }
 const { lang } = Astro.props;
-const rooms = sceneMeta.filter((r) => r.file !== 'Kindergarden-Map');
-const map = sceneOf('Kindergarden-Map');
-const mapMeta = sceneMeta.find((r) => r.file === 'Kindergarden-Map');
+const s = t(lang);
+const map = sceneOf('Kindergarten-Map');
+const mapMeta = sceneMeta.find((r) => r.file === 'Kindergarten-Map');
+const countLabel = (n: number) => `${n} ${n === 1 ? s.storyCount.one : s.storyCount.many}`;
 ---
 
 <div class="places">
   <ul class="strip" tabindex="0">
-    {rooms.map((r) => {
+    {places.map((r) => {
       const img = sceneOf(r.file);
+      const n = storiesAt(r.file).length;
       return (
         img && (
           <li>
-            <Image src={img} alt={lang === 'en' ? r.en : r.zh} widths={[480, 720]} sizes="360px" loading="lazy" />
-            <span>{lang === 'en' ? r.en : r.zh}</span>
+            <a class="place" href={`/${lang}/places/${r.slug}/`}>
+              <span class="pic">
+                <Image src={img} alt={placeName(r, lang)} widths={[480, 720]} sizes="360px" loading="lazy" />
+                {n > 0 && <span class="count">{countLabel(n)}</span>}
+              </span>
+              <span class="name">{placeName(r, lang)}</span>
+            </a>
           </li>
         )
       );
@@ -28,7 +35,7 @@ const mapMeta = sceneMeta.find((r) => r.file === 'Kindergarden-Map');
   </ul>
   {map && (
     <figure class="map">
-      <Image src={map} alt={lang === 'en' ? mapMeta?.en : mapMeta?.zh} widths={[800, 1200, 1600]} sizes="(max-width: 1240px) 100vw, 1200px" loading="lazy" />
+      <Image src={map} alt={mapMeta ? placeName(mapMeta, lang) : ''} widths={[800, 1200, 1600]} sizes="(max-width: 1240px) 100vw, 1200px" loading="lazy" />
     </figure>
   )}
 </div>
@@ -48,19 +55,74 @@ const mapMeta = sceneMeta.find((r) => r.file === 'Kindergarden-Map');
     flex: 0 0 min(360px, 78vw);
     scroll-snap-align: start;
   }
-  .strip img {
+  .place {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+  }
+  .pic {
+    position: relative;
+    display: block;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  }
+  .pic img {
+    display: block;
     width: 100%;
     aspect-ratio: 3 / 2;
     object-fit: cover;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .strip span {
+  .count {
+    position: absolute;
+    left: 0.6rem;
+    bottom: 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--ink);
+    background: rgba(250, 244, 239, 0.92);
+    padding: 0.2em 0.65em;
+    border-radius: 999px;
+  }
+  .name {
     display: block;
     margin-top: 0.5rem;
     font-weight: 700;
     color: var(--ink-2);
     font-size: 0.95rem;
+    transition: color 0.2s ease;
+  }
+  .place:hover .pic,
+  .place:focus-visible .pic {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .place:hover .pic img {
+    transform: scale(1.04);
+  }
+  .place:hover .name,
+  .place:focus-visible .name {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .place:focus-visible {
+    outline: 2px solid var(--ink-2);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pic,
+    .pic img {
+      transition: none;
+    }
+    .place:hover .pic,
+    .place:hover .pic img {
+      transform: none;
+    }
   }
   .map {
     margin: 0;
