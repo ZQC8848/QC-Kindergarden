@@ -62,13 +62,28 @@ Display names come from `website/src/data/characters.config.mjs` (`en.name`). Lo
 | 誓言 | the vow | "Do it again and you turn into a dog." |
 | 群殴 | the beating | Neutral; the Chinese is matter-of-fact about it. |
 | 小手术 | "the little operation" | QC's euphemism; keep the quotation marks. |
-| 七天追咬 | the seven-day chase | Story title uses "The Seven-Day Bite". |
-| 定榜夜 | ranking night | |
-| 王者兰特 | *pending* | Parody of a MOBA title; decide per run and log it. |
-| 狗不理 | *pending* | Top player ID used by Haide; pun on the bun brand. |
-| 点到为止 | *pending* | Dianer's game ID. |
-| 夜行玫瑰 | Night Rose | Liiie's game ID. |
+| 七天追咬 | the seven-day bite | Story title: "The Seven-Day Bite". |
+| 定榜 / 定榜夜 | the rankings lock / ranking night | Story title: "Kings of Rant: Ranking Night". |
+| 王者兰特 | Kings of Rant | *pending QC* (2026-09-09). Parody of a MOBA title; "Rant" keeps the sound of 兰特 and the trash-talk. |
+| 狗不理 | NoDogsAllowed | *pending QC* (2026-09-09). Haide's #1 ID. The bun-brand pun is replaced by an ID a dog would never be expected to hold. |
+| 点到为止 | PointTaken | *pending QC* (2026-09-09). Dianer's ID; "Point" carries 点, the idiom's "stop there" becomes "taken". |
+| 夜行玫瑰 | NightRose | Liiie's game ID, written as one word like a gamer handle. |
 | 月度异常 | monthly anomaly | Aisha's log entry. |
+
+## Story titles
+
+| 中文 | English |
+|---|---|
+| Haide 变成狗的那一天 | The Day Haide Became a Dog |
+| 七天追咬事件 | The Seven-Day Bite |
+| QC 的连环噩梦 | QC's Nightmare in Three Acts |
+| 午夜的金色法拉利 | The Gold Ferrari at Midnight |
+| 王者兰特定榜夜 | Kings of Rant: Ranking Night |
+| 幼儿园四大魔女 | The Four Witches of the Kindergarten |
+
+## MBTI labels (Basics table)
+
+Campaigner / happy-puppy type · Debater / troublemaker type · Protagonist / big-sister type · Architect / little-strategist type · Mediator / crybaby type · Advocate / old-soul type · Mediator / little-gardener type · Protagonist / little-sun type · Logician / homebody-gamer type · Commander / little-general type · Advocate / young-lady type · Debater / absentee-boss type.
 
 ## Tone words
 

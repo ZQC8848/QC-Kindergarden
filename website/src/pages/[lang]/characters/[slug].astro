@@ -45,7 +45,7 @@ const sectionId = (title: string, i: number) => `s-${i}`;
       <div class="intro">
         <p class="crumbs"><a href={`/${lang}/#characters`}>{s.allCharacters}</a></p>
         <h1>{name}</h1>
-        <p class="mbti"><span class="chip">{c.mbti}</span> <span class="mbti-label">{bible.mbtiLabel.replace(/^[A-Z]{4}/, '').replace(/^[（(]|[)）]$/g, '')}</span></p>
+        <p class="mbti"><span class="chip">{c.mbti}</span> <span class="mbti-label">{bible.mbtiLabel.replace(/^[A-Z]{4}/, '').trim().replace(/^[（(]|[)）]$/g, '')}</span></p>
         {bible.tagline && <p class="tagline">{bible.tagline}</p>}
         {bible.phrases.length > 0 && (
           <div class="phrases">
