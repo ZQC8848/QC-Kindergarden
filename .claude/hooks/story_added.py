@@ -1,4 +1,5 @@
-"""PostToolUse hook: fires after Write/Edit. If the written file is a story under stories/,
+"""PostToolUse hook: fires after Write (new/overwritten files; Edit is excluded on purpose so
+touching an existing story does not re-ask). If the written file is a story under stories/,
 tell Claude to ask the user whether the story's new settings should be merged into the
 characters' 性格设定.md. Never modifies anything itself.
 
