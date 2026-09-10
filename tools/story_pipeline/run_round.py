@@ -164,7 +164,8 @@ def main() -> int:
             unparsed += int(c.parse_failed)
             store.write(c)
             written.append(c)
-            print(f'  ok   {m:9} {slot:14} {c.words()} 字  {c.title}', flush=True)
+            over = '  ⚠ 超出上限' if c.words() > store.MAX_STORY_CHARS else ''
+            print(f'  ok   {m:9} {slot:14} {c.words()} 字{over}  {c.title}', flush=True)
 
     meta = {
         'round': round_id,

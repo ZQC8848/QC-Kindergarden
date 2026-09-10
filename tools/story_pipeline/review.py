@@ -49,7 +49,8 @@ def find(cid: str) -> store.Candidate:
 
 
 def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
-    print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()} 字')
+    over = ' ⚠超上限' if c.words() > store.MAX_STORY_CHARS else ''
+    print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()} 字{over}')
     if not blind:
         print(f'  model: {c.model}  taste: {c.taste_context}  slot: {c.slot}')
     if c.parse_failed:

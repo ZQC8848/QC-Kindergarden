@@ -42,10 +42,23 @@ REASONS = {
     'off_character': '不像这个角色',
     'stale_joke': '梗太老',
     'duplicate': '和已有故事重复',
+    'too_long': '超出长度上限，撑不住这个篇幅',
     'never_chosen': '备选三次未选中',   # written by the shortlist decay, not by QC
+    'superseded': '在规则变更前生成，整轮作废',
 }
 
 MAX_REVISITS = 3
+
+# Length ceiling for a generated story, in non-whitespace characters. Derived from the
+# accepted set: the longest, 《幼儿园四大魔女》, is 2086, and QC set the cap at that plus
+# 200. It is a ceiling and not a target — the other five accepted stories run 387 to 517.
+# r02 was written with no cap at all and produced 817 to 4895; the whole round was cut.
+MAX_STORY_CHARS = 2286
+
+# Written when a round is cut because the rules it was produced under have since changed,
+# rather than because each story failed on its own. Keeping these apart matters: they are
+# not evidence about what QC dislikes, and mining them as such would poison the profile.
+
 
 
 @dataclass
