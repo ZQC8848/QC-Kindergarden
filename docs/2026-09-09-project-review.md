@@ -20,11 +20,11 @@
 - 故事系统有明确的数据模型：`type: memory | extra`、`memories.<slug>.{knowledge, summary, impact}`、`timeline`，中英文双文件同构，并有确定性审计脚本。
 
 **问题**
-1. **两套 agent 配置互为副本。** `CLAUDE.md` 与 `AGENTS.md` 除文件名互换外逐字相同；`fieldnotes` skill 在 `.claude/skills/` 和 `.agents/skills/` 各有一份，已漂移 2 行。Claude 侧的 hook `check_bilingual_consistency.py` 又去调用 `.agents/skills/translate-en/scripts/audit_en.py`，两个生态互相引用。
+1. **两套 agent 配置互为副本，且 Claude 看不到一半 skill。** `CLAUDE.md` 与 `AGENTS.md` 除文件名互换外逐字相同。五个 skill 只实装在 `.agents/skills/`（Codex 读），Claude Code 只读 `.claude/skills/`，那里只有一份没人引用的 `fieldnotes` 孤儿副本且已漂移 2 行，因此 qc-taste、story-illustrator、translate-en、discord-notify 在 Claude 的 skill 列表里根本不出现。Claude 侧的 hook `check_bilingual_consistency.py` 又按路径调用 `.agents/skills/translate-en/scripts/audit_en.py`，两个生态互相引用。
 2. **改名残留。** 项目已更名 QC Kindergarten（提交 `31be12c`），但 GitHub 仓库、本地目录仍是 Kindergarden；子模块 URL 已改成 Kindergarten-Research。
 3. **顶层目录命名混合中英文且含空格**：`character reference`、`Scene Reference`、`其他人物`，脚本里处处要引号，新工具容易踩坑。
 4. **"故事是事件唯一真源"没执行到底。** `stories/README.md` 规定事件只在故事文件里，bible 保留长期性格。实际 Haide、点儿、QC 的 bible 里还留着完整事件叙述，只是标题改成"事件档案（已迁移）"（QC 两段、Haide 一段、点儿一段），网站不显示但两处都要改。
-5. **游离资产。** `character reference/其他人物/` 五个客串角色有 bible 和三视图，但 config、网站、脚本都不认识它们；`website/站位图.png` 散在网站根目录；`website/group-photo/work/` 14 张过程稿（27 MB）入了库。
+5. **游离资产。** `character reference/其他人物/` 五个客串角色有 bible 和三视图，`story-illustrator` skill 和 `audit_en.py` 都认识它们，但网站不展示；`website/站位图.png` 散在网站根目录；`website/group-photo/work/` 14 张过程稿（27 MB）入了库。
 
 ## 代码质量
 
@@ -46,8 +46,8 @@
 1. **没有 CI。** build、类型检查、双语审计都只在本地跑，且类型检查从没跑过。
 2. **没有测试。** `parseBible` 对标题、表格、口头禅引号的解析全靠约定，改一个 bible 格式就可能静默丢字段。
 3. **frontmatter 无校验。** `type` 拼错会静默变成 `memory`；`knowledge` 写了非法值会原样进 JSON；`location` 未知只 warn。
-4. **仓库体积。** 所有 PNG 直接入 git，pack 已 60 MB；历史里有 `FUFU→Fufu` 这类重命名，同一张图存了两份；`stories/README.md` 规定"所有版本都留着"，加上 4K 版本，每个故事会带 5 到 8 张 2 到 8 MB 的图。
-5. **文档漂移**（4 处）：`website/README.md` 页面列表没有 places 页；`DESIGN.md` 待办第 6 条"英文翻译"已完成未勾；第 4 层"环境全景"描述与现状（房间页 + 平面图）不符；`CLAUDE.md` 说 `.claude/skills/fieldnotes/` 是项目 skill，实际主力 skills 在 `.agents/skills/`。
+4. **仓库体积。** 所有 PNG 直接入 git，pack 已 60 MB；`stories/README.md` 规定"所有版本都留着"，加上 4K 版本，每个故事会带 5 到 8 张 2 到 8 MB 的图；`website/group-photo/work/` 另有 27 MB 无人引用的过程稿。（更正：早先写的"重命名让同一张图存了两份"不成立，实测 `FUFU→Fufu` 是 `R100` 纯重命名，blob 唯一。）
+5. **文档漂移**（4 处）：`website/README.md` 页面列表没有 places 页；`DESIGN.md` 待办第 6 条"英文翻译"已完成未勾；第 4 层"环境全景"描述与现状（房间页 + 平面图）不符；`website/group-photo/composition.json` 与 `GROUP-PHOTO.md` 引用的 `work/background-16x9-v1.png`、`work/concept-v1.png`、`identity-sheet.png` 三个文件均已不存在。
 6. **hook 成本。** `check_bilingual_consistency` 在每次写 bible / 故事 / i18n 时跑完整审计（上限 30 秒）。目前 12 角色 6 故事还快，规模翻倍后会明显拖慢编辑。
 
 ## 建议的处理顺序
@@ -69,10 +69,14 @@
 **P2（有空再做）**
 - 素材策略二选一：Git LFS 管所有 PNG；或者过程稿（`work/`、v1 到 v(n-1) 草稿）不入库，仓库只留最终版 + 4K。改 `stories/README.md` 的"所有版本都留着"。
 - bible 里"事件档案（已迁移）"四段删掉，或压成一行"见 stories/xxx.md"。
-- `其他人物/` 要么进 config 成为一等公民（`guest: true`，网站不列卡片但故事页可引用），要么移到 `stories/assets/guests/`。
+- `其他人物/` 改名 `_guests/`（去掉中文目录名）；要不要进 config 成为一等公民（`guest: true`，网站不列卡片但故事页可引用）另议。
 - 顶层目录去空格、统一英文：`content/characters`、`content/scenes`、`content/stories`。这是大改，配合一次 sync 脚本路径常量修改即可，但会让 git 历史里的重命名再多一轮，建议和 LFS 迁移一起做。
 - 仓库改名与本地目录改名对齐 Kindergarten。
 - Python 工具集中到 `tools/`，加 `requirements.txt`。
+
+## 更正记录
+
+2026-09-09 写[修复方案](2026-09-09-architecture-fix-plan.md)时复核，本文原有两处判断不成立，已在上文修正：`CLAUDE.md` 的 skill 路径其实是对的（错的是 `.claude/skills/` 里的孤儿副本）；git 重命名不会复制 blob，目录改名对体积几乎无影响。同时补入新发现的三处死引用。
 
 ## 附：检查方法
 
