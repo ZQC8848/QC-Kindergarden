@@ -39,7 +39,11 @@ Use update mode when QC asks to learn from, refresh, extract, or update taste fr
 
 The hard state machine is:
 
-`EVIDENCE → CANDIDATE DIFF → HUMAN REVIEW → APPROVED UPDATE`
+`SCOPE → EVIDENCE → CANDIDATE DIFF → HUMAN REVIEW → APPROVED UPDATE`
+
+Start by running `python tools/taste_scan.py`. An update reads **only the chat-history records added or extended since the last update**, tracked per file in `consumed_records` rather than by date. Never re-mine a record that is already consumed.
+
+An update that changes nothing is a correct update. If the scan finds no new records, or the new records carry no human decision that bears on creative taste, say so and stop; advancing the cursor is the only write. Do not invent a rule to make a run look productive.
 
 Never edit the canonical profile or structured rules before QC explicitly approves the candidate diff. Periodic runs may automatically collect and compare evidence, but silence, non-response, and AI-authored suggestions are not approval.
 

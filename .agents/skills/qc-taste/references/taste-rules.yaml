@@ -1,6 +1,41 @@
 version: "0.1"
 evidence_through: "2026-09-09"
 status: "working-profile"
+
+# Incremental cursor for update mode. Each entry is an ai-chat-history record that has
+# already been mined, with the sha256 and line count it had at that time. The next update
+# reads only records that are absent here, or whose sha256 has changed (re-exported
+# sessions grow) — from the recorded line count onward.
+#
+# A date cursor is not enough: `evidence_through` was 2026-09-09 while a 2026-09-07
+# session sat unexported, and archiving it later would never have brought it into scope.
+# Run `python tools/taste_scan.py` to compute the current scope.
+consumed_records:
+  - path: "ResearchAssets/ai-chat-history/2026-09-06-gpt-character-image-generation.md"
+    sha256: "f2427d12ad8b5f761d852fccae4e95b528ec6ae03e695b0aa77b3ed88d62bcab"
+    lines: 281
+    consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md"
+    sha256: "920aafe65d70b119ab903473943241fd6dabe60a4a1937da7a3c6bf0c3318005"
+    lines: 1404
+    consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-website-design-and-english-translation.md"
+    sha256: "f69bdecf581a0b0b417f292524b1d0679f923c799b25e4d1a7678d2e9b7ccc08"
+    lines: 1274
+    consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/2026-09-08-codex-group-photo-and-story-workflow.md"
+    sha256: "38875548951da5e6a67dcdc302ddf270ac1e5ea977fa9861e7a47eefc3cf3065"
+    lines: 1254
+    consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/2026-09-09-codex-project-skills-research-and-rename.md"
+    sha256: "a34106608e219817e0cfe6a4c6e1a66c7c2c254978cec6aa7f7f2ce2ec175149"
+    lines: 437
+    consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/2026-09-09-codex-story-illustrations-and-inline-images.md"
+    sha256: "9bad0451fc8630290d5903433dcfb1d63d4357ea7a04c92f49cd7d802bdc12b8"
+    lines: 1214
+    consumed_on: "2026-09-09"
+
 rules:
   - id: "T001"
     rule: "Start from character wants and contradictions; let theme emerge from their collision."
