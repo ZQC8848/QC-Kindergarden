@@ -4,7 +4,7 @@
     python tools/story_pipeline/review.py                          # list pending, blind
     python tools/story_pipeline/review.py --show c-a7f3            # read the whole story
     python tools/story_pipeline/review.py c-a7f3 discard --reason stale_joke
-    python tools/story_pipeline/review.py c-a7f3 shortlist
+    python tools/story_pipeline/review.py c-a7f3 shortlist --notes "好在哪，缺什么"
     python tools/story_pipeline/review.py c-a7f3 select
     python tools/story_pipeline/review.py c-a7f3 revise --notes "把结尾收短"
     python tools/story_pipeline/review.py --stats                   # after review only
@@ -127,7 +127,7 @@ def main() -> int:
             show(c, blind=True)
         if pending:
             print('\nverdicts:  discard --reason X  |  shortlist  |  select  |  revise --notes "..."')
-            print('reasons:   ' + '  '.join(f'{k}={v}' for k, v in store.REASONS.items() if k != 'never_chosen'))
+            print('reasons:   ' + '  '.join(f'{k}={v}' for k, v in store.REASONS.items() if k not in ('never_chosen', 'generation_failed')))
         return 0
 
     if not args.verdict:

@@ -21,6 +21,7 @@ date: 2026-09-08                # 故事写成的日期
 source: user | claude | gpt     # 谁写的
 type: memory | extra            # 记忆事件或番外剧场
 timeline: 1                     # 世界观顺序；番外可省略
+open_ending: true               # 可选。结尾是刻意留的悬念：不续写、不揭晓、不解释
 memories:                       # 仅 memory 使用，key 推荐写稳定 slug
   haide:
     title: 角色自己的记忆标题
@@ -31,6 +32,7 @@ memories:                       # 仅 memory 使用，key 推荐写稳定 slug
 ```
 
 - `date` 是创作日期，`timeline` 才是世界观内的先后顺序。
+- `open_ending: true` 标记结尾是刻意留白的故事（目前是《午夜的金色法拉利》和《王者兰特定榜夜》）。强行续接会同时破坏两篇的氛围，所以故事流水线会把它们标成不可续写，后果位也不会拿它们当起点。
 - 可选字段 `teaser: 一句不剧透的话`，Discord 通知会优先用它；没有就取正文第一句。
 - 英文版放在同名的 `<故事文件名>.en.md`：frontmatter 只写 `title`、`framing`（番外）和 `memories`（每个角色的 `title` / `summary` / `impact`），`cast`、`location`、`date`、`type`、`timeline` 沿用中文文件；正文翻译后保留 `<!-- illustration:N|英文说明 -->` 标记。翻译规范见 `.agents/skills/translate-en/SKILL.md`。
 - `cast` 表示与故事有关、可用于筛选的角色；`memories` 表示真正拥有该段记忆的角色，两者不必相同。

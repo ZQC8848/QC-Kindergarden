@@ -7,6 +7,7 @@ source: user
 polish: codex
 type: memory
 timeline: 5
+open_ending: true
 memories:
   liiie:
     title: 传说下面的第二名

@@ -141,15 +141,28 @@ def load_guests() -> list[tuple[str, str]]:
     return out
 
 
+def _memory_holders(frontmatter: str) -> list[tuple[str, str]]:
+    """(slug, knowledge) for every character carrying the story's memory."""
+    block = re.search(r'^memories:[ \t]*\n((?:[ \t]+.*\n?)*)', frontmatter + '\n', re.M)
+    if not block:
+        return []
+    out = []
+    for m in re.finditer(r'^  ([^\s:]+):[ \t]*\n((?:    .*\n?)*)', block.group(1), re.M):
+        level = re.search(r'knowledge:\s*(\w+)', m.group(2))
+        out.append((m.group(1), level.group(1) if level else 'witnessed'))
+    return out
+
+
 def load_stories() -> list[dict]:
     """Existing stories, one line each. Feeds the models' `differs_from` field."""
     out = []
     for path in sorted(STORIES.glob('*.md')):
         if path.name == 'README.md' or path.name.endswith('.en.md'):
             continue
-        md = path.read_text(encoding='utf-8')
-        fm = re.match(r'^---\r?\n(.*?)\r?\n---', md, re.S)
+        md = path.read_text(encoding='utf-8').replace('\r\n', '\n')
+        fm = re.match(r'^---\n(.*?)\n---', md, re.S)
         data = dict(re.findall(r'^(\w+):\s*(.+)$', fm.group(1), re.M)) if fm else {}
+        knows = _memory_holders(fm.group(1)) if fm else []
         body = md[fm.end():] if fm else md
         first = next(
             (
@@ -167,10 +180,23 @@ def load_stories() -> list[dict]:
                 'cast': data.get('cast', ''),
                 'location': data.get('location', ''),
                 'first': first,
+                # Only these characters know the event happened, at these levels. The brief
+                # used to drop this entirely, so a secret three people share could turn up
+                # being argued in front of the whole kindergarten.
+                'knows': knows,
+                'open_ending': data.get('open_ending', '').strip() == 'true',
             }
         )
     return out
 
+
+KNOWLEDGE_ZH = {
+    'witnessed': '亲历',
+    'heard': '听说',
+    'inferred': '推测',
+    'partial': '只知道一部分',
+    'secret': '知情但保密',
+}
 
 RULES = """\
 ## 世界与规则
@@ -181,6 +207,8 @@ RULES = """\
 - **日常小事不要提交。** 帽子掉进汤锅、午餐时间办个比赛、大家一起做点心——这类"任何一家托儿所任何一个星期二都可能发生"的前提会被直接否决，无论细节写得多贴合人设。
 - 故事分两类：**记忆事件**真实发生、会影响之后的人物关系与行为；**番外**是特别篇、假想与恶搞，不进入任何角色的记忆。你要标明属于哪一类。
 - 记忆是主观的：同一件事，每个角色记住的版本不同，有人只知道一部分，有人知情但保密。不要让角色仅仅因为读者知道就知道某件事。
+- **秘密只属于知情的人。** 下面「已有故事」每篇都列了知情者；没列出来的角色就是不知道，不能参与、议论、记录或追查那件事。
+- **除了 QC，所有角色都是孩子。** 幼儿园另有园长、老师等大人，但他们不出现在故事里，也不需要解释他们为什么不在。孩子不掌握机构层面的权力：门禁、账本、广播、园主身份不会归到任何一个孩子名下。
 - **这一步只写大纲，不写正文。** 大纲上限 **200 字**（不含空白），写不满不要紧，写不下说明前提还没收干净。
   正文由另一个环节统一执笔，你要交的是一个值得被写成故事的前提。
 - 大纲里要能看出：谁做了什么、什么翻转了、结束时什么变了。不需要对白，不需要场面描写，不需要铺垫。
@@ -201,7 +229,9 @@ SLOTS = {
 
 不是续写，是**后果**：那件事留下的东西——一个改变了的习惯、一段没消化的记忆、一个还没还的人情、一个被埋起来的秘密——在几周或几个月后长成了一件新的、更麻烦的事。
 
-《七天追咬事件》就是这么来的：Haide 变成狗之后适应了四条腿，于是幼儿园恢复了熟悉的混乱。""",
+《七天追咬事件》就是这么来的：Haide 变成狗之后适应了四条腿，于是幼儿园恢复了熟悉的混乱。
+
+**标了「刻意留白」的故事不能拿来接。** 那些结尾的悬念就是故事本身，续写、揭晓或解释都会同时毁掉两篇。""",
     },
     'contradiction': {
         'zh': '矛盾位',
@@ -217,7 +247,9 @@ SLOTS = {
         'brief': """\
 拿一条**已经确立的具体事实**——某个道具、某个习惯、某条额外设定——把它推到一个不可能的量级。
 
-不要发明新事实，要放大旧事实。QC 的金色法拉利本来就在设定里，《午夜的金色法拉利》把它推到凌晨两点的超速罚单和一个没人敢承认的车速。艾莎的记仇本也在设定里——它可以被推到什么程度？""",
+不要发明新事实，要放大旧事实。《午夜的金色法拉利》是这个形状：一件本来就在设定里的事，被推到凌晨两点、没人敢承认的车速。
+
+**例子只说明形状。** 不要去放大例子里的同一件事，也不要去放大已有故事已经放大过的事——挑一条还没人动过的。""",
     },
     'transposition': {
         'zh': '移植位',
@@ -238,13 +270,21 @@ EXPANSION_BRIEF = """\
 新地点的代价远高于新人物：新地点要单独绘制场景参考图并生成地点页。如果新人物和新地点能达成同一个效果，选新人物。
 """
 
+PREMISE_HINT = {
+    'consequence': '说明你接的是哪一篇的哪个残留。',
+    'contradiction': '说明你用的是谁的哪一条矛盾。这个位子不是续集，不要接任何已有故事。',
+    'escalation': '说明你放大的是哪一条既有事实。这个位子不是续集，不要接任何已有故事。',
+    'transposition': '说明你移植进了什么类型。这个位子不是续集，不要接任何已有故事。',
+    'expansion': '说明引入的新人物或新地点是什么、为什么非它不可。这个位子不是续集，不要接任何已有故事。',
+}
+
 OUTPUT_SPEC = """\
 ## 输出格式
 
 输出一个 JSON 对象，字段如下：
 
 - `title`：故事标题。
-- `premise_line`：一行，说明你按本次的位子做了什么——接了哪篇的什么残留 / 用了谁的哪条矛盾 / 放大了哪条既有事实 / 移植进了什么类型。
+- `premise_line`：一行，<<PREMISE_HINT>>
 - `kind`：`memory` 或 `extra`。
 - `cast`：出场角色的 slug 列表。
 - `location`：场景文件名，从上面的场景清单里挑最合适的一个。**地点由故事决定，不要为了用某个地点而编故事。**
@@ -289,8 +329,14 @@ def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> st
 
     out += ['## 已有故事', '',
             '`nearest` 要从这里挑一篇同类的。不要重复它们，但也不要靠"写得更小"来制造区别。', '']
+    names = {c.slug: c.name for c in characters}
     for st in stories:
         out.append(f"- `{st['slug']}`（{st['kind']}）**{st['title']}** — {st['first']}")
+        if st['knows']:
+            who = '、'.join(f"{names.get(slug, slug)}（{KNOWLEDGE_ZH.get(level, level)}）" for slug, level in st['knows'])
+            out.append(f'  - 知情者：{who}。其他人不知道。')
+        if st['open_ending']:
+            out.append('  - **刻意留白的结尾：不要续写、不要揭晓、不要解释，也不要让任何人去追查。**')
     out.append('')
 
     if taste:
@@ -304,7 +350,9 @@ def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> st
         spec = SLOTS[slot]
         out += [f"## 你的任务：{spec['zh']}", '', spec['brief'], '']
 
-    out.append(OUTPUT_SPEC)
+    # The hint used to list every slot's clause to every slot, so "接了哪篇的什么残留"
+    # reached slots that were never meant to continue anything, and they did.
+    out.append(OUTPUT_SPEC.replace('<<PREMISE_HINT>>', PREMISE_HINT[slot]))
     return '\n'.join(out)
 
 

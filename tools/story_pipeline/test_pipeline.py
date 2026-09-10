@@ -109,20 +109,27 @@ class Verdicts(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.decide(self.make(), 'maybe', now=NOW)
 
-    def test_shortlist_retires_after_three_revisits(self):
-        c = store.decide(self.make(), 'shortlisted', now=NOW)
+    def test_shortlist_without_qcs_view_is_refused(self):
+        # A shortlisted idea comes back to be rewritten; without what works and what is
+        # missing, the rewrite just regenerates the same flaw.
+        with self.assertRaises(ValueError):
+            store.decide(self.make(), 'shortlisted', now=NOW)
+
+    def test_shortlist_retires_after_three_revisits_and_keeps_the_notes(self):
+        c = store.decide(self.make(), 'shortlisted', notes='好在温馨，缺前置事件', now=NOW)
         for expected in (1, 2, 3):
             c = store.revisit(c, now=NOW)
             self.assertEqual((c.verdict, c.revisit_count), ('shortlisted', expected))
         c = store.revisit(c, now=NOW)
         self.assertEqual((c.verdict, c.reason), ('discarded', 'never_chosen'))
+        self.assertEqual(c.notes, '好在温馨，缺前置事件')
 
     def test_only_shortlisted_candidates_can_be_revisited(self):
         with self.assertRaises(ValueError):
             store.revisit(self.make(), now=NOW)
 
     def test_retired_candidates_leave_the_pool(self):
-        c = store.decide(self.make(), 'shortlisted', now=NOW)
+        c = store.decide(self.make(), 'shortlisted', notes='n', now=NOW)
         self.assertEqual(len(store.shortlist_pool()), 1)
         for _ in range(4):
             c = store.revisit(c, now=NOW)
@@ -227,6 +234,26 @@ class ToCandidate(unittest.TestCase):
         self.assertEqual(c.outline, '发生了一件事。')
 
 
+class StoryKnowledge(unittest.TestCase):
+    def test_memory_holders_are_read_with_their_level(self):
+        fm = (
+            'title: T\ntimeline: 4\nmemories:\n'
+            '  qc:\n    title: a\n    knowledge: inferred\n    summary: s\n'
+            '  haide:\n    title: b\n    knowledge: secret\n'
+            'teaser: x'
+        )
+        self.assertEqual(brief_mod._memory_holders(fm), [('qc', 'inferred'), ('haide', 'secret')])
+
+    def test_a_story_without_memories_has_no_holders(self):
+        self.assertEqual(brief_mod._memory_holders('title: T\ntype: extra'), [])
+
+    def test_the_ferrari_secret_stays_with_three_people(self):
+        # QC: "理论上幼儿园没那么多人知道法拉利的事情". The brief used to drop memories
+        # entirely, and the round that followed argued the ticket in front of everyone.
+        ferrari = next(st for st in brief_mod.load_stories() if st['slug'] == '2026-09-09-midnight-ferrari')
+        self.assertEqual({slug for slug, _ in ferrari['knows']}, {'qc', 'haide', 'dianer'})
+
+
 class Brief(unittest.TestCase):
     def test_all_twelve_characters_are_in_the_brief(self):
         text = brief_mod.build(taste=False, slot='contradiction')
@@ -285,6 +312,35 @@ class Brief(unittest.TestCase):
         self.assertIn('这一步只写大纲，不写正文', text)
         self.assertIn('`outline`', text)
         self.assertIn(str(store.MAX_OUTLINE_CHARS), text)
+
+    def test_every_brief_lists_who_knows_and_the_adults_rule(self):
+        text = brief_mod.build(taste=False, slot='contradiction')
+        self.assertIn('其他人不知道', text)
+        self.assertIn('秘密只属于知情的人', text)
+        self.assertIn('除了 QC，所有角色都是孩子', text)
+
+    def test_open_endings_are_marked_and_closed_to_the_consequence_slot(self):
+        # Both of QC's deliberately unresolved stories were sequelled twice in one round.
+        stories = brief_mod.load_stories()
+        open_ones = {st['slug'] for st in stories if st['open_ending']}
+        self.assertEqual(open_ones, {'2026-09-09-midnight-ferrari', '2026-09-09-kings-rank-night'})
+        text = brief_mod.build(taste=False, slot='consequence')
+        self.assertEqual(text.count('刻意留白的结尾：不要续写'), len(open_ones))
+        self.assertIn('标了「刻意留白」的故事不能拿来接', text)
+
+    def test_only_the_consequence_slot_is_told_to_continue_a_story(self):
+        # "接了哪篇的什么残留" used to be shown to every slot, and non-sequel slots obeyed it.
+        for slot in ('contradiction', 'escalation', 'transposition', 'expansion'):
+            text = brief_mod.build(taste=False, slot=slot)
+            self.assertNotIn('接了哪篇', text, slot)
+            self.assertIn('这个位子不是续集，不要接任何已有故事', text, slot)
+        self.assertIn('说明你接的是哪一篇的哪个残留', brief_mod.build(taste=False, slot='consequence'))
+
+    def test_the_escalation_example_does_not_hand_out_a_target(self):
+        # It used to ask what 艾莎's grudge book could be pushed to; 10 of 17 outlines used it.
+        text = brief_mod.SLOTS['escalation']['brief']
+        self.assertNotIn('艾莎的记仇本', text)
+        self.assertIn('例子只说明形状', text)
 
     def test_dedup_field_does_not_reward_shrinking(self):
         # r01's `differs_from` was answered by being smaller and quieter than the good

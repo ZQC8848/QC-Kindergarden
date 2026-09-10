@@ -44,7 +44,12 @@ REASONS = {
     'duplicate': '和已有故事重复',
     'too_long': '超出长度上限，撑不住这个篇幅',
     'never_chosen': '备选三次未选中',   # written by the shortlist decay, not by QC
+    # superseded: cut because the rules changed, not because the story failed. It is not
+    # evidence about what QC dislikes, and mining it as such would poison the profile.
     'superseded': '在规则变更前生成，整轮作废',
+    'breaks_canon': '违反既有设定（世界观，或谁知道什么）',
+    'forced_sequel': '强行续写刻意留白的故事',
+    'generation_failed': '模型输出缺失（系统记录，非 QC 裁决）',
 }
 
 MAX_REVISITS = 3
@@ -60,11 +65,6 @@ MAX_REVISITS = 3
 # because taste rule T021 refers to it, not because this module enforces it.
 MAX_OUTLINE_CHARS = 200
 MAX_PROSE_CHARS = 2286
-
-# Written when a round is cut because the rules it was produced under have since changed,
-# rather than because each story failed on its own. Keeping these apart matters: they are
-# not evidence about what QC dislikes, and mining them as such would poison the profile.
-
 
 
 @dataclass
@@ -235,6 +235,10 @@ def decide(c: Candidate, verdict: str, *, reason: str | None = None, notes: str 
         raise ValueError(f'unknown reason {reason!r}; expected one of {", ".join(REASONS)}')
     if verdict == 'selected_with_notes' and not notes:
         raise ValueError('selected_with_notes must carry the requested changes')
+    # A shortlisted idea comes back later to be rewritten, and a rewrite without QC's
+    # read on what works and what is missing just regenerates the same flaw.
+    if verdict == 'shortlisted' and not notes:
+        raise ValueError('a shortlist must carry QC\'s view: what works, and what is missing')
     c.verdict = verdict
     c.reason = reason
     c.notes = notes
@@ -255,7 +259,8 @@ def revisit(c: Candidate, *, now: str) -> Candidate:
         raise ValueError(f'{c.id} is {c.verdict}, not shortlisted')
     c.revisit_count += 1
     if c.revisit_count > MAX_REVISITS:
-        return decide(c, 'discarded', reason='never_chosen', now=now)
+        # Keep QC's shortlist notes on the way out; they are the useful part.
+        return decide(c, 'discarded', reason='never_chosen', notes=c.notes, now=now)
     write(c)
     return c
 

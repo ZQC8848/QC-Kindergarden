@@ -7,6 +7,7 @@ source: user
 polish: codex
 type: memory
 timeline: 4
+open_ending: true
 memories:
   qc:
     title: 证据相册已经四十多张

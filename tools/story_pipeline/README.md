@@ -27,7 +27,7 @@ python tools/story_pipeline/review.py --show c-a7f3      # 单看一条
 # 5. 逐条裁决
 python tools/story_pipeline/review.py c-a7f3 select
 python tools/story_pipeline/review.py c-b1e9 discard --reason too_everyday
-python tools/story_pipeline/review.py c-c4d2 shortlist
+python tools/story_pipeline/review.py c-c4d2 shortlist --notes "好在哪，缺什么"   # 必须带意见
 python tools/story_pipeline/review.py c-d0f1 revise --notes "把结尾收短"
 
 # 6. 全部裁决完之后，才揭晓每个模型的表现
@@ -62,6 +62,10 @@ r01 问的是「把这三个人放进这个房间会发生什么」——那是�
 
 两个上限是分开的，不要合并：`MAX_OUTLINE_CHARS = 200` 管生成阶段的大纲，`MAX_PROSE_CHARS = 2286` 管成稿正文（已定稿最长篇 2086 + 200，其余五篇 387–517、中位数 488）。测试钉住了这两个数不能被合并。超限只标记不拒收——多几个字但确实好的大纲仍然该送到 QC 面前。
 
+**brief 带着知情者和留白标记。** 每篇已有故事都列出 `memories` 里的知情者及其程度，没列出的角色不知道那件事；`open_ending: true` 的故事标为不可续写，后果位也不会拿它们当起点。2026-09-10 这一轮之前 brief 丢掉了全部 `memories`，于是只有三个人知道的法拉利被整个幼儿园拿去开庭，而后果位的 4 条全部去续了那两篇刻意留白的故事。
+
+**候补必须带 QC 的意见。** `shortlist` 不带 `--notes` 会被拒绝：候补以后要被拿出来重写，没有「好在哪、缺什么」就只会把同一个毛病再生成一遍。
+
 **`stands_beside` 不是 `differs_from`。** r01 用的是「这条和哪篇最接近，区别在哪」，模型全都通过"更小、更静、更少人物"来达成区别——那是最便宜的差异化方式，而且**正在制造寡淡**。现在问的是「凭什么配站在那一篇旁边」，并明确写了不要靠写得更小来制造区别。
 
 ## 文件
@@ -74,7 +78,7 @@ r01 问的是「把这三个人放进这个房间会发生什么」——那是�
 | `run_round.py` | 编排一轮，写 `round.json`（含每个位子的 brief sha256） |
 | `publish.py` | 把一轮推到 Discord 评审频道，一篇一帖 |
 | `review.py` | 终端盲评与裁决 |
-| `test_pipeline.py` | 32 个用例，`python tools/story_pipeline/test_pipeline.py` |
+| `test_pipeline.py` | `python tools/story_pipeline/test_pipeline.py` |
 
 候选数据落在 **私有子模块** `ResearchAssets/story-candidates/<轮次>/`——里面是 QC 对朋友虚拟分身的原始否决理由。选定的故事才毕业到公开仓库的 `stories/`。
 
