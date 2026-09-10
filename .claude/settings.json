@@ -11,6 +11,17 @@
             "statusMessage": "检查是否新增了故事"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_bilingual_consistency.py\"",
+            "timeout": 40,
+            "statusMessage": "检查网站中英文内容是否一致"
+          }
+        ]
       }
     ]
   }

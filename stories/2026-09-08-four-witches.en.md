@@ -149,7 +149,11 @@ An orange shape flashes past the door like wind, followed by a second shout: "Do
 
 The classroom goes quiet.
 
-Mushi picks up the painting and looks at it carefully. Then he takes a pen from his pocket and, in the corner, beside the four witches, draws a very small dog running away.
+Mushi looks at Haide's painting on the floor, then down at his own sheet of paper.
+
+He picks up his pen. On the paper with its sun full of smiling faces, he draws five people in witch hats: Fufu, himself, Aisha, Mimi, and Ruanruan. Last of all, in one corner, he adds a tiny dog running away.
+
+<!-- illustration:3|Mushi's drawing: Five Witches and a Fleeing Dog -->
 
 "This one doesn't come free," he tells himself, then adds, "…forget it, he wouldn't pay anyway."
 

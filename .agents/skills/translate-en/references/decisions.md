@@ -13,6 +13,13 @@ Format per run:
 
 Keep the "为什么" column short: what the Chinese does, what the English does to match. "其他方案" lists the real alternatives considered with one clause on why each lost.
 
+## 2026-09-09 — four-witches ending sync
+
+| 原文 | 译文 | 为什么 | 其他方案 | 出现位置 | 状态 |
+|---|---|---|---|---|---|
+| 在自己原本画满笑脸太阳的纸上 | On the paper with its sun full of smiling faces | 故事开头明确是一轮太阳里有十二张笑脸；英文沿用这个已建立的画面，避免结尾突然变成很多个太阳。 | over the paper filled with smiling suns（更贴结尾字面，但与开头冲突）；on his original drawing（丢失笑脸太阳的画面） | four-witches.en.md ×1 | pending |
+| 牧师画的《五个魔女和一只逃跑的狗》 | Mushi's drawing: Five Witches and a Fleeing Dog | “Fleeing”比逐字的“running away”更像画作标题，同时保留狗正在逃跑的动作。 | Five Witches and a Dog Running Away（准确但不像标题）；Five Witches and a Runaway Dog（容易理解成离家出走的狗） | four-witches.en.md ×1 | pending |
+
 ## 2026-09-09 — full site: 12 bibles, 6 stories
 
 All rows below were approved by QC on 2026-09-09; reusable terms are in the glossary.
