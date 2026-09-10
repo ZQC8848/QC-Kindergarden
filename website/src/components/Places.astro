@@ -35,7 +35,13 @@ const countLabel = (n: number) => `${n} ${n === 1 ? s.storyCount.one : s.storyCo
   </ul>
   {map && (
     <figure class="map">
-      <Image src={map} alt={mapMeta ? placeName(mapMeta, lang) : ''} widths={[800, 1200, 1600]} sizes="(max-width: 1240px) 100vw, 1200px" loading="lazy" />
+      <Image
+        src={map}
+        alt={mapMeta ? placeName(mapMeta, lang) : ''}
+        widths={[800, 1200, 1600]}
+        sizes="(max-width: 1240px) 100vw, 1200px"
+        loading="lazy"
+      />
     </figure>
   )}
 </div>
@@ -67,7 +73,9 @@ const countLabel = (n: number) => `${n} ${n === 1 ? s.storyCount.one : s.storyCo
     border-radius: var(--radius-sm);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s ease;
   }
   .pic img {
     display: block;

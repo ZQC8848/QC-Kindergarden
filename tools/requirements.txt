@@ -1,0 +1,4 @@
+# Python 工具的依赖。标准库能跑的脚本不在这里：
+#   tools/audit_en.py、tools/skill_stubs.py、.claude/hooks/*.py 都只用标准库。
+requests>=2.31        # character reference/_tools/gen_reference.py 调 OpenRouter
+Pillow>=10.0          # website/group-photo/_tools/build_identity_sheet.py 拼身份总表

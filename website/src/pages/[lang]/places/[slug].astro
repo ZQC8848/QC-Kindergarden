@@ -24,23 +24,41 @@ const others = places.filter((x) => x.slug !== slug);
 const countLabel = `${here.length} ${here.length === 1 ? s.storyCount.one : s.storyCount.many}`;
 ---
 
-<Base lang={lang} title={`${name} · ${s.siteName}`} description={`${name} · ${countLabel}`} altPath={`/${otherLang(lang)}/places/${slug}/`}>
+<Base
+  lang={lang}
+  title={`${name} · ${s.siteName}`}
+  description={`${name} · ${countLabel}`}
+  altPath={`/${otherLang(lang)}/places/${slug}/`}
+>
   <article class="place wrap">
     <header class="head">
-      <p class="crumbs"><a href={`/${lang}/#places`}>{s.placesTitle}</a></p>
+      <p class="crumbs">
+        <a href={`/${lang}/#places`}>{s.placesTitle}</a>
+      </p>
       <div class="title-row">
         <h1>{name}</h1>
         <span class="chip">{countLabel}</span>
       </div>
       <nav class="pager" aria-label={s.placesTitle}>
-        <a href={`/${lang}/places/${prev.slug}/`} rel="prev">← {placeName(prev, lang)}</a>
-        <a href={`/${lang}/places/${next.slug}/`} rel="next">{placeName(next, lang)} →</a>
+        <a href={`/${lang}/places/${prev.slug}/`} rel="prev">
+          ← {placeName(prev, lang)}
+        </a>
+        <a href={`/${lang}/places/${next.slug}/`} rel="next">
+          {placeName(next, lang)} →
+        </a>
       </nav>
     </header>
 
     {img && (
       <figure class="hero">
-        <Image src={img} alt={name} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="eager" fetchpriority="high" />
+        <Image
+          src={img}
+          alt={name}
+          widths={[720, 1200, 1600]}
+          sizes="(max-width: 1000px) 100vw, 960px"
+          loading="eager"
+          fetchpriority="high"
+        />
       </figure>
     )}
 
@@ -86,11 +104,6 @@ const countLabel = `${here.length} ${here.length === 1 ? s.storyCount.one : s.st
   .place {
     padding-top: clamp(1.5rem, 4vw, 3rem);
     max-width: 960px;
-  }
-  .crumbs {
-    font-weight: 700;
-    color: var(--ink-2);
-    margin-bottom: 0.5rem;
   }
   .crumbs a {
     color: inherit;

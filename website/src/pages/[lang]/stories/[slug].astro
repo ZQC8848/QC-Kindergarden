@@ -1,7 +1,17 @@
 ---
 import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
-import { stories, bySlug, coverOf, illustrationOf, posterOf, nameOf, sceneByFile, placeName, focusOf, storyText } from '../../../lib/content';
+import Avatar from '../../../components/Avatar.astro';
+import {
+  stories,
+  bySlug,
+  coverOf,
+  illustrationOf,
+  nameOf,
+  sceneByFile,
+  placeName,
+  storyText,
+} from '../../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../../i18n';
 
 export function getStaticPaths() {
@@ -16,10 +26,17 @@ const tx = storyText(st, lang);
 const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
 ---
 
-<Base lang={lang} title={`${tx.title} · ${s.siteName}`} description={tx.excerpt} altPath={`/${otherLang(lang)}/stories/${slug}/`}>
+<Base
+  lang={lang}
+  title={`${tx.title} · ${s.siteName}`}
+  description={tx.excerpt}
+  altPath={`/${otherLang(lang)}/stories/${slug}/`}
+>
   <article class="story wrap">
-    <p class="crumbs"><a href={`/${lang}/#stories`}>{s.storiesTitle}</a></p>
-    <p class:list={["kind", `kind-${st.kind}`]}>{st.kind === 'memory' ? s.memoryEvents : s.extraTheater}</p>
+    <p class="crumbs">
+      <a href={`/${lang}/#stories`}>{s.storiesTitle}</a>
+    </p>
+    <p class:list={['kind', `kind-${st.kind}`]}>{st.kind === 'memory' ? s.memoryEvents : s.extraTheater}</p>
     <h1>{tx.title}</h1>
     <div class="meta">
       <span>{st.date}</span>
@@ -38,11 +55,10 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     <div class="cast" aria-label={s.cast}>
       {st.cast.map((cs) => {
         const c = bySlug[cs];
-        const p = c && posterOf(cs);
         return (
           c && (
             <a class="member" href={`/${lang}/characters/${cs}/`} style={`--accent:${c.accent};`}>
-              {p && <Image src={p} alt="" width={96} loading="lazy" style={`object-position:${focusOf(c, 'avatar')};`} />}
+              <Avatar c={c} lang={lang} size={30} labelled={false} />
               <span>{nameOf(c, lang)}</span>
             </a>
           )
@@ -51,7 +67,13 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     </div>
     {cover && (
       <figure class="cover">
-        <Image src={cover} alt="" widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="eager" />
+        <Image
+          src={cover}
+          alt=""
+          widths={[720, 1200, 1600]}
+          sizes="(max-width: 1000px) 100vw, 960px"
+          loading="eager"
+        />
       </figure>
     )}
     {!tx.translated && <p class="notice">{s.notTranslated}</p>}
@@ -60,11 +82,19 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
       {tx.content.map((block) => {
         if (block.type === 'html') return <div class="prose text" set:html={block.html} />;
         const image = illustrationOf(st.slug, block.panel);
-        return image && (
-          <figure class="story-illustration">
-            <Image src={image} alt={block.title} widths={[720, 1200, 1600]} sizes="(max-width: 1000px) 100vw, 960px" loading="lazy" />
-            <figcaption>{block.title}</figcaption>
-          </figure>
+        return (
+          image && (
+            <figure class="story-illustration">
+              <Image
+                src={image}
+                alt={block.title}
+                widths={[720, 1200, 1600]}
+                sizes="(max-width: 1000px) 100vw, 960px"
+                loading="lazy"
+              />
+              <figcaption>{block.title}</figcaption>
+            </figure>
+          )
         );
       })}
     </div>
@@ -79,22 +109,27 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
           {st.memories.map((raw) => {
             const memory = tx.memory(raw);
             const c = bySlug[memory.character];
-            const poster = c && posterOf(memory.character);
-            return c && (
-              <article class="memory" style={`--memory-accent:${c.accent};`}>
-                <a class="memory-person" href={`/${lang}/characters/${c.slug}/`} aria-label={nameOf(c, lang)}>
-                  {poster && <Image src={poster} alt="" width={128} loading="lazy" style={`object-position:${focusOf(c, 'avatar')};`} />}
-                  <div>
-                    <h3>{nameOf(c, lang)}</h3>
-                    <span>{s.knowledge[memory.knowledge]}</span>
+            return (
+              c && (
+                <article class="memory" style={`--memory-accent:${c.accent};`}>
+                  <a
+                    class="memory-person"
+                    href={`/${lang}/characters/${c.slug}/`}
+                    aria-label={nameOf(c, lang)}
+                  >
+                    <Avatar c={c} lang={lang} size={54} labelled={false} ring="transparent" />
+                    <div>
+                      <h3>{nameOf(c, lang)}</h3>
+                      <span>{s.knowledge[memory.knowledge]}</span>
+                    </div>
+                  </a>
+                  <div class="memory-copy">
+                    <h3>“{memory.title}”</h3>
+                    <p>{memory.summary}</p>
+                    {memory.impact && <p class="impact">{memory.impact}</p>}
                   </div>
-                </a>
-                <div class="memory-copy">
-                  <h3>“{memory.title}”</h3>
-                  <p>{memory.summary}</p>
-                  {memory.impact && <p class="impact">{memory.impact}</p>}
-                </div>
-              </article>
+                </article>
+              )
             );
           })}
         </div>
@@ -108,11 +143,6 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     padding-top: clamp(1.5rem, 4vw, 3rem);
     max-width: 960px;
   }
-  .crumbs {
-    font-weight: 700;
-    color: var(--ink-2);
-    margin-bottom: 0.5rem;
-  }
   .kind {
     margin-bottom: 0.45rem;
     color: var(--accent-ink);
@@ -120,7 +150,9 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     font-weight: 900;
     letter-spacing: 0.03em;
   }
-  .kind-extra { color: var(--ink-2); }
+  .kind-extra {
+    color: var(--ink-2);
+  }
   .meta {
     margin-top: 0.8rem;
     display: flex;
@@ -164,13 +196,6 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     font-weight: 800;
     font-size: 0.9rem;
   }
-  .member img {
-    width: 30px;
-    height: 30px;
-    border-radius: 999px;
-    object-fit: cover;
-    object-position: 50% 15%;
-  }
   .cover {
     margin: 2rem 0;
     border-radius: var(--radius);
@@ -179,11 +204,6 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
   }
   .notice {
     margin: 1.5rem 0;
-    padding: 0.7rem 1rem;
-    border-radius: var(--radius-sm);
-    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
-    color: var(--accent-ink);
-    font-weight: 700;
   }
   .extra-notice {
     border-left: 4px solid var(--accent);
@@ -245,7 +265,10 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     padding: 1.25rem;
     border-radius: var(--radius);
     background: color-mix(in srgb, var(--memory-accent) 10%, var(--panel));
-    transition: background 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    transition:
+      background 0.2s ease,
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s ease;
   }
   /* The whole card links to the character: the person block is the link and its ::after stretches over the card. */
   .memory:has(.memory-person:hover),
@@ -286,13 +309,6 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
       transform: none;
     }
   }
-  .memory-person img {
-    width: 54px;
-    height: 54px;
-    border-radius: 999px;
-    object-fit: cover;
-    object-position: 50% 15%;
-  }
   .memory-person span {
     color: var(--ink-2);
     font-size: 0.8rem;
@@ -307,6 +323,9 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
     font-weight: 700;
   }
   @media (max-width: 680px) {
-    .memory { grid-template-columns: 1fr; gap: 1rem; }
+    .memory {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
   }
 </style>

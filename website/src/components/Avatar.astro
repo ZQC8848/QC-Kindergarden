@@ -1,0 +1,44 @@
+---
+/**
+ * A character's circular face. Four places used to hand-roll this same circle
+ * (story cards, story cast pills, memory rows, relationship rows), each with its own
+ * class name and its own copy of the crop rules. The shared look lives in `.avatar`
+ * in global.css; this component is the markup half.
+ *
+ * Wrap it in an <a> when it should link somewhere. For an overlapping row, put
+ * `class="avatar-stack"` on the parent and optionally set `--avatar-overlap`.
+ */
+import { Image } from 'astro:assets';
+import { posterOf, focusOf, nameOf, type Character } from '../lib/content';
+import type { Lang } from '../i18n';
+
+interface Props {
+  c: Character;
+  lang: Lang;
+  /** rendered diameter in px */
+  size?: number;
+  /** false when the name is already written next to the avatar, so it is decorative */
+  labelled?: boolean;
+  /** ring colour; defaults to the panel colour behind cards */
+  ring?: string;
+}
+
+const { c, lang, size = 34, labelled = true, ring } = Astro.props;
+const poster = posterOf(c.slug);
+const name = nameOf(c, lang);
+const style = [`--avatar-size:${size}px`, `--accent:${c.accent}`, ring ? `--avatar-ring:${ring}` : '']
+  .filter(Boolean)
+  .join(';');
+---
+
+<span class="avatar" style={style} title={labelled ? name : undefined}>
+  {poster && (
+    <Image
+      src={poster}
+      alt={labelled ? name : ''}
+      width={Math.round(size * 3)}
+      loading="lazy"
+      style={`object-position:${focusOf(c, 'avatar')};`}
+    />
+  )}
+</span>

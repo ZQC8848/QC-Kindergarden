@@ -2,7 +2,18 @@
 import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
 import StoryList from '../../../components/StoryList.astro';
-import { characters, bySlug, posterOf, turnaroundOf, stories, bibleFor, nameOf, inkOf, focusOf } from '../../../lib/content';
+import Avatar from '../../../components/Avatar.astro';
+import {
+  characters,
+  bySlug,
+  posterOf,
+  turnaroundOf,
+  stories,
+  bibleFor,
+  nameOf,
+  inkOf,
+  focusOf,
+} from '../../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../../i18n';
 
 export function getStaticPaths() {
@@ -24,7 +35,7 @@ const memoryStories = stories
   .filter((st) => st.kind === 'memory' && st.memories.some((memory) => memory.character === slug))
   .sort((a, b) => (a.timeline ?? 999) - (b.timeline ?? 999));
 const extraStories = stories.filter((st) => st.kind === 'extra' && st.cast.includes(slug));
-const sectionId = (title: string, i: number) => `s-${i}`;
+const sectionId = (i: number) => `s-${i}`;
 ---
 
 <Base
@@ -39,23 +50,47 @@ const sectionId = (title: string, i: number) => `s-${i}`;
     <header class="top wrap">
       <div class="poster plate">
         {poster && (
-          <Image src={poster} alt={`${name} poster`} widths={[480, 720, 960]} sizes="(max-width: 860px) 100vw, 420px" loading="eager" fetchpriority="high" style={`object-position:${focusOf(c, 'card')};`} />
+          <Image
+            src={poster}
+            alt={`${name} poster`}
+            widths={[480, 720, 960]}
+            sizes="(max-width: 860px) 100vw, 420px"
+            loading="eager"
+            fetchpriority="high"
+            style={`object-position:${focusOf(c, 'card')};`}
+          />
         )}
       </div>
       <div class="intro">
-        <p class="crumbs"><a href={`/${lang}/#characters`}>{s.allCharacters}</a></p>
+        <p class="crumbs">
+          <a href={`/${lang}/#characters`}>{s.allCharacters}</a>
+        </p>
         <h1>{name}</h1>
-        <p class="mbti"><span class="chip">{c.mbti}</span> <span class="mbti-label">{bible.mbtiLabel.replace(/^[A-Z]{4}/, '').trim().replace(/^[（(]|[)）]$/g, '')}</span></p>
+        <p class="mbti">
+          <span class="chip">{c.mbti}</span>{' '}
+          <span class="mbti-label">
+            {bible.mbtiLabel
+              .replace(/^[A-Z]{4}/, '')
+              .trim()
+              .replace(/^[（(]|[)）]$/g, '')}
+          </span>
+        </p>
         {bible.tagline && <p class="tagline">{bible.tagline}</p>}
         {bible.phrases.length > 0 && (
           <div class="phrases">
             <span class="k">{s.phrase}</span>
-            {bible.phrases.map((p) => <span class="phrase">“{p}”</span>)}
+            {bible.phrases.map((p) => (
+              <span class="phrase">“{p}”</span>
+            ))}
           </div>
         )}
         <nav class="pager" aria-label="characters">
-          <a href={`/${lang}/characters/${prev.slug}/`} rel="prev">← {nameOf(prev, lang)}</a>
-          <a href={`/${lang}/characters/${next.slug}/`} rel="next">{nameOf(next, lang)} →</a>
+          <a href={`/${lang}/characters/${prev.slug}/`} rel="prev">
+            ← {nameOf(prev, lang)}
+          </a>
+          <a href={`/${lang}/characters/${next.slug}/`} rel="next">
+            {nameOf(next, lang)} →
+          </a>
         </nav>
       </div>
     </header>
@@ -65,9 +100,17 @@ const sectionId = (title: string, i: number) => `s-${i}`;
     {turnaround && (
       <section class="wrap turn">
         <details>
-          <summary>{s.turnaround} <span class="sub">{s.threeD}</span></summary>
+          <summary>
+            {s.turnaround} <span class="sub">{s.threeD}</span>
+          </summary>
           <div class="turn-scroll" tabindex="0">
-            <Image src={turnaround} alt={`${name} ${s.turnaround}`} widths={[1200, 1800]} sizes="1200px" loading="lazy" />
+            <Image
+              src={turnaround}
+              alt={`${name} ${s.turnaround}`}
+              widths={[1200, 1800]}
+              sizes="1200px"
+              loading="lazy"
+            />
           </div>
         </details>
       </section>
@@ -78,19 +121,37 @@ const sectionId = (title: string, i: number) => `s-${i}`;
         <nav aria-label={s.profile}>
           <ul>
             {bible.description.map((sec, i) => (
-              <li><a href={`#${sectionId(sec.title, i)}`}>{sec.title}</a></li>
+              <li>
+                <a href={`#${sectionId(i)}`}>{sec.title}</a>
+              </li>
             ))}
-            {bible.extras.length > 0 && <li><a href="#extras">{s.extras}</a></li>}
-            {memoryStories.length > 0 && <li><a href="#memories">{s.memories}</a></li>}
-            {extraStories.length > 0 && <li><a href="#extra-appearances">{s.appearsInExtras}</a></li>}
-            {bible.relations.length > 0 && <li><a href="#relations">{s.relations}</a></li>}
+            {bible.extras.length > 0 && (
+              <li>
+                <a href="#extras">{s.extras}</a>
+              </li>
+            )}
+            {memoryStories.length > 0 && (
+              <li>
+                <a href="#memories">{s.memories}</a>
+              </li>
+            )}
+            {extraStories.length > 0 && (
+              <li>
+                <a href="#extra-appearances">{s.appearsInExtras}</a>
+              </li>
+            )}
+            {bible.relations.length > 0 && (
+              <li>
+                <a href="#relations">{s.relations}</a>
+              </li>
+            )}
           </ul>
         </nav>
       </aside>
 
       <div class="content">
         {bible.description.map((sec, i) => (
-          <section class="block" id={sectionId(sec.title, i)}>
+          <section class="block" id={sectionId(i)}>
             <h2>{sec.title}</h2>
             <div class="prose" set:html={sec.html} />
           </section>
@@ -130,14 +191,13 @@ const sectionId = (title: string, i: number) => `s-${i}`;
             <ul class="relations">
               {bible.relations.map((r) => (
                 <li>
-                  <div class="faces">
+                  <div class="faces avatar-stack">
                     {r.targets.map((tslug) => {
                       const tc = bySlug[tslug];
-                      const tp = tc && posterOf(tslug);
                       return (
                         tc && (
-                          <a href={`/${lang}/characters/${tslug}/`} class="face" style={`--accent:${tc.accent};`} title={nameOf(tc, lang)}>
-                            {tp && <Image src={tp} alt={nameOf(tc, lang)} width={96} loading="lazy" style={`object-position:${focusOf(tc, 'avatar')};`} />}
+                          <a href={`/${lang}/characters/${tslug}/`}>
+                            <Avatar c={tc} lang={lang} size={44} ring="var(--bg)" />
                           </a>
                         )
                       );
@@ -169,14 +229,6 @@ const sectionId = (title: string, i: number) => `s-${i}`;
     width: 100%;
     aspect-ratio: 3 / 4;
     object-fit: cover;
-  }
-  .crumbs {
-    font-weight: 700;
-    color: var(--ink-2);
-    margin-bottom: 0.5rem;
-  }
-  .crumbs a:hover {
-    color: var(--ink);
   }
   .mbti {
     margin-top: 0.8rem;
@@ -219,11 +271,6 @@ const sectionId = (title: string, i: number) => `s-${i}`;
   }
   .notice {
     margin-top: 1.5rem;
-    padding: 0.7rem 1rem;
-    border-radius: var(--radius-sm);
-    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
-    color: var(--accent-ink);
-    font-weight: 700;
   }
   .turn {
     margin-top: 2rem;
@@ -339,23 +386,8 @@ const sectionId = (title: string, i: number) => `s-${i}`;
     display: flex;
     min-width: 44px;
   }
-  .face {
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: color-mix(in srgb, var(--accent) 40%, var(--panel));
-    border: 2px solid var(--bg);
-    margin-left: -10px;
-  }
-  .face:first-child {
-    margin-left: 0;
-  }
-  .face img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 15%;
+  .faces {
+    --avatar-overlap: -10px;
   }
   @media (max-width: 860px) {
     .top {

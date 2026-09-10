@@ -65,7 +65,9 @@ const href = `/${lang}/characters/${c.slug}/`;
     border-radius: var(--radius);
     background: var(--panel);
     overflow: hidden;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s ease;
     box-shadow: var(--shadow-sm);
     --reveal-delay: calc(var(--i) * 40ms);
   }

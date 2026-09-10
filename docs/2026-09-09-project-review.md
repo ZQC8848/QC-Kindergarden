@@ -7,7 +7,7 @@
 | 维度 | 分 (5) | 一句话 |
 |---|---|---|
 | 架构清晰度 | 3.5 | 内容 / 网站 / 研究三层分离和"单一数据源"落实得好；双 agent 生态重复、命名残留、真源规则没执行到底 |
-| 代码质量 | 3.5 | 网站与脚本职责清楚、有注释；类型检查有 2 个错误被 build 掩盖，UI 片段重复，风格在两个 AI 的提交之间已不一致 |
+| 代码质量 | 3.5 → 已整改 | 网站与脚本职责清楚、有注释；类型检查有 2 个错误被 build 掩盖，UI 片段重复，风格在两个 AI 的提交之间已不一致。2026-09-09 全部处理，见文末执行记录 |
 | 可维护性 | 2.5 | 没有 CI、没有测试、没有 schema 校验；素材全量入库，仓库会持续膨胀；文档已有 4 处漂移 |
 
 验证过的事实：`npm run build` 通过，63 页，4.5 秒；`astro check` 2 错 0 警 2 提示；`audit_en.py` 通过；仓库 pack 60 MB，工作区素材约 310 MB。
@@ -50,6 +50,28 @@
 5. **文档漂移**（4 处）：`website/README.md` 页面列表没有 places 页；`DESIGN.md` 待办第 6 条"英文翻译"已完成未勾；第 4 层"环境全景"描述与现状（房间页 + 平面图）不符；`website/group-photo/composition.json` 与 `GROUP-PHOTO.md` 引用的 `work/background-16x9-v1.png`、`work/concept-v1.png`、`identity-sheet.png` 三个文件均已不存在。
 6. **hook 成本。** `check_bilingual_consistency` 在每次写 bible / 故事 / i18n 时跑完整审计（上限 30 秒）。目前 12 角色 6 故事还快，规模翻倍后会明显拖慢编辑。
 
+## 代码质量整改执行记录（2026-09-09）
+
+| 原问题 | 处理 |
+|---|---|
+| 类型错误被 build 掩盖 | 新增 `website/src/data/schema.ts`，用 `astro/zod`（Astro 自带，无新依赖）定义 JSON 形状。sync 脚本写出前校验，`content.ts` 只取 `z.infer` 类型，手写 interface 删除。`astro check` 从 4 错变 0 错 0 警 |
+| frontmatter 无校验 | 同上。`type`、`knowledge`、`date` 格式、accent 色值现在都由 schema 拦截，错值直接中断构建并指出故事和字段 |
+| UI 片段重复 | 新增 `components/Avatar.astro`，圆形头像样式收进 `global.css` 的 `.avatar` / `.avatar-stack`；`.notice`、`.crumbs` 同样收进全局。四处重复的裁剪规则和三种类名（`.avatar` / `.face` / `.member`）合并 |
+| sync 脚本内部重复 | 三处 `nameToSlug[x] ?? nameToSlug[x.toLowerCase()]` 统一走 `resolveSlug`；中英文 `memories` 解析合并为 `memoryEntries()`；死字段 `location` 删除，只留 `locations` |
+| 风格不统一 | 加 prettier + `.prettierrc.json` + `.prettierignore` + 根目录 `.editorconfig`，16 个文件一次性格式化。新增 `npm run format` / `format:check` / `check` / `verify` |
+| Python 工具分散、无依赖清单 | 新增 `tools/requirements.txt`，注明只有两个脚本需要第三方库（requests、Pillow），其余全是标准库 |
+| `sectionId` 未用参数 | 删除 |
+| i18n 键对齐靠外部审计 | `i18n.ts` 拆成 `const zh` 与 `const en: Dict`，`Dict` 是从 zh 推导的映射类型，缺键现在由 `astro check` 直接报错 |
+
+**过程中发现并修掉的两个问题**
+
+1. **头像组件差点造成视觉回归。** `.avatar` 用 `<span>` 承载，而 span 默认 inline，宽高不生效；包在 `<a>` 里的关系头像塌成 2px。提交前用 DOM 实测尺寸时发现，已加 `display: block` 并写明原因。
+2. **`tools/audit_en.py` 的 i18n 检查早已是假检查。** prettier 把 `sync-content.mjs` 里别名表的键去掉引号后，审计的正则失配，整份 bible 检查报了 72 个假阳性；修好后又发现它的 i18n 键检查在字典结构改变后会**静默跳过**而不是报错。两处都已修：别名正则同时接受带引号和不带引号的键；i18n 检查读不到字典时直接报"解析器需要更新"，不再默默通过。
+
+**验证**：`npm run verify`（sync → format:check → astro check → build）全绿，63 页；`tools/audit_en.py` 与 `tools/skill_stubs.py` 通过；浏览器实测首页 12 卡 12 热区 6 故事 29 个头像无一塌陷。三种失败场景（非法 knowledge、缺英文键、审计解析器失配）都实测能被拦住。
+
+**未做**：CI（GitHub Actions）与单元测试，属可维护性一组。
+
 ## 建议的处理顺序
 
 **P0（一小时内，零风险）**
@@ -61,12 +83,12 @@
 架构清晰度五项已于 2026-09-09 全部执行，代码质量与可维护性两组尚未开始。
 
 **P1（一天）**
-- 给 sync 输出加 schema：用 zod 定义 `Character` / `Story`，sync 脚本写出前 `parse()`，`content.ts` 用 `z.infer` 取类型，删掉手写 interface。frontmatter 非法值直接报错退出。
-- 抽三个组件：`Avatar.astro`、`Notice.astro`、`Crumbs.astro`；`.notice` / `.crumbs` 样式进 `global.css`。
-- sync 脚本：统一走 `resolveSlug`；`memories` 解析抽成一个函数供中英文复用；`location` 字段删掉只留 `locations`。
-- 加 prettier + editorconfig，`npm run check` 跑 `astro check`，`npm run lint`。
-- GitHub Actions：push 时跑 sync + build + astro check + audit_en，Vercel 继续负责部署。
-- `node:test` 给 `parseBible`、`parseStoryContent`、`resolveSlug` 各写 3 到 5 个用例，用真实 bible 做快照。
+- ~~给 sync 输出加 schema~~ 完成。
+- ~~抽组件、`.notice` / `.crumbs` 进 `global.css`~~ 完成（`Notice` / `Crumbs` 用全局类而非组件，只有一个元素不值得包一层）。
+- ~~sync 脚本去重~~ 完成。
+- ~~prettier + editorconfig + npm 脚本~~ 完成。
+- GitHub Actions：push 时跑 `npm run verify` + `tools/audit_en.py` + `tools/skill_stubs.py`，Vercel 继续负责部署。**未做。**
+- `node:test` 给 `parseBible`、`parseStoryContent`、`resolveSlug` 各写 3 到 5 个用例。**未做。**
 
 **P2（有空再做）**
 - 素材策略二选一：Git LFS 管所有 PNG；或者过程稿（`work/`、v1 到 v(n-1) 草稿）不入库，仓库只留最终版 + 4K。改 `stories/README.md` 的"所有版本都留着"。

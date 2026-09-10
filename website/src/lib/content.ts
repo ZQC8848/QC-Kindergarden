@@ -1,90 +1,32 @@
 import type { ImageMetadata } from 'astro';
+import type { Bible, Character, Story, StoryMemory } from '../data/schema';
 import charactersJson from '../data/characters.json';
 import storiesJson from '../data/stories.json';
 import composition from '../../group-photo/composition.json';
 import { scenes as sceneList } from '../data/characters.config.mjs';
 import type { Lang } from '../i18n';
 
-export interface Section {
-  title: string;
-  html: string;
-}
-export interface Relation {
-  html: string;
-  targets: string[];
-}
-export interface Bible {
-  title: string;
-  tagline: string;
-  mbti: string;
-  mbtiLabel: string;
-  basic: Record<string, string>;
-  phrases: string[];
-  description: Section[];
-  extras: Section[];
-  relations: Relation[];
-}
-export interface Character {
-  slug: string;
-  folder: string;
-  accent: string;
-  hoverCell: number;
-  focus: { card?: string; avatar?: string } | null;
-  name: { zh: string; en: string };
-  mbti: string;
-  hasPoster: boolean;
-  hasExpressions: boolean;
-  hasTurnaround: boolean;
-  /** true when 性格设定.en.md exists for this character */
-  translated: boolean;
-  zh: Bible;
-  en: Bible | null;
-}
-export type StoryKind = 'memory' | 'extra';
-export interface StoryMemoryText {
-  title: string;
-  summary: string;
-  impact: string | null;
-}
-/** Parsed from stories/<slug>.en.md when it exists. */
-export interface StoryEn {
-  title: string;
-  framing: string | null;
-  excerpt: string;
-  content: StoryContentBlock[];
-  memories: Record<string, StoryMemoryText>;
-}
-export interface StoryMemory {
-  character: string;
-  title: string;
-  knowledge: 'witnessed' | 'heard' | 'inferred' | 'partial' | 'secret';
-  summary: string;
-  impact: string | null;
-}
-export type StoryContentBlock =
-  | { type: 'html'; html: string }
-  | { type: 'illustration'; panel: number; title: string };
-export interface Story {
-  slug: string;
-  title: string;
-  cast: string[];
-  location: string | null;
-  locations: string[];
-  date: string;
-  source: string | null;
-  kind: StoryKind;
-  timeline: number | null;
-  framing: string | null;
-  memories: StoryMemory[];
-  hasCover: boolean;
-  illustrations: number[];
-  excerpt: string;
-  content: StoryContentBlock[];
-  en: StoryEn | null;
-}
+// Shapes live in src/data/schema.ts; the sync script validates the JSON against them
+// before writing, so these types describe data that has already been checked at build time.
+export type {
+  Section,
+  Relation,
+  Bible,
+  Character,
+  StoryKind,
+  StoryMemory,
+  StoryMemoryText,
+  StoryContentBlock,
+  StoryEn,
+  Story,
+} from '../data/schema';
 
-export const characters = charactersJson as Character[];
-export const stories = storiesJson as Story[];
+// `as unknown as` on purpose: TypeScript infers a per-record literal type from the JSON
+// import, which can never be `comparable` to one shared type. scripts/sync-content.mjs
+// validates both files against src/data/schema.ts before writing them, so the runtime
+// guarantee lives there rather than in this cast.
+export const characters = charactersJson as unknown as Character[];
+export const stories = storiesJson as unknown as Story[];
 export const bySlug = Object.fromEntries(characters.map((c) => [c.slug, c]));
 
 type Img = { default: ImageMetadata };
@@ -96,14 +38,25 @@ const scenes = import.meta.glob<Img>('/src/assets/scenes/*.png', { eager: true }
 const group = import.meta.glob<Img>('/src/assets/group-photo.png', { eager: true });
 
 export const posterOf = (slug: string) => posters[`/src/assets/characters/${slug}/poster.png`]?.default;
-export const expressionsOf = (slug: string) => expressions[`/src/assets/characters/${slug}/expressions.png`]?.default;
-export const turnaroundOf = (slug: string) => turnarounds[`/src/assets/characters/${slug}/turnaround.png`]?.default;
+export const expressionsOf = (slug: string) =>
+  expressions[`/src/assets/characters/${slug}/expressions.png`]?.default;
+export const turnaroundOf = (slug: string) =>
+  turnarounds[`/src/assets/characters/${slug}/turnaround.png`]?.default;
 export const coverOf = (slug: string) => storyImages[`/src/assets/stories/${slug}.png`]?.default;
-export const illustrationOf = (slug: string, panel: number) => storyImages[`/src/assets/stories/${slug}-p${panel}.png`]?.default;
-export const leadImageOf = (story: Story) => coverOf(story.slug) ?? story.illustrations.map((panel) => illustrationOf(story.slug, panel)).find(Boolean);
+export const illustrationOf = (slug: string, panel: number) =>
+  storyImages[`/src/assets/stories/${slug}-p${panel}.png`]?.default;
+export const leadImageOf = (story: Story) =>
+  coverOf(story.slug) ?? story.illustrations.map((panel) => illustrationOf(story.slug, panel)).find(Boolean);
 export const sceneOf = (file: string) => scenes[`/src/assets/scenes/${file}.png`]?.default;
 export const groupPhoto = group['/src/assets/group-photo.png']?.default;
-export const groupLayers = composition.layers as { character: string; x: number; y: number; depth: number; scale: number; spot?: { x: number; y: number } }[];
+export const groupLayers = composition.layers as {
+  character: string;
+  x: number;
+  y: number;
+  depth: number;
+  scale: number;
+  spot?: { x: number; y: number };
+}[];
 export interface Scene {
   file: string;
   slug: string;
@@ -162,20 +115,24 @@ function luminance(hex: string): number {
 }
 
 function contrast(a: string, b: string): number {
-  const la = luminance(a), lb = luminance(b);
+  const la = luminance(a),
+    lb = luminance(b);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
 /** Text colour to put ON a solid accent background: cream on dark accents, deep brown on light ones. */
 export function onAccent(hex: string): string {
-  const cream = '#fffaf6', dark = '#1f1613';
+  const cream = '#fffaf6',
+    dark = '#1f1613';
   return contrast(hex, cream) >= contrast(hex, dark) ? cream : dark;
 }
 
 /** Darken an accent enough for text on the peach page (DESIGN.md: 用作文字时必须加深). */
 export function inkOf(hex: string, amount = 0.32): string {
   const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const r = (n >> 16) & 255,
+    g = (n >> 8) & 255,
+    b = n & 255;
   const d = (v: number) => Math.round(v * (1 - amount));
   return `#${[d(r), d(g), d(b)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }

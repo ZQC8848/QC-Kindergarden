@@ -1,0 +1,7 @@
+dist/
+.astro/
+src/assets/
+src/data/characters.json
+src/data/stories.json
+package-lock.json
+public/

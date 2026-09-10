@@ -33,8 +33,10 @@ def load_aliases():
     block = re.search(r'const SECTION_ALIASES = \{(.*?)\};', text, re.S)
     aliases = {}
     if block:
-        for m in re.finditer(r"'([^']+)':\s*'([^']+)'", block.group(1)):
-            aliases[m.group(1)] = m.group(2)
+        # Prettier drops the quotes around keys that do not need them (`Basics:` next to
+        # `'Core personality':`), so accept a key either way.
+        for m in re.finditer(r"(?:'([^']+)'|([A-Za-z_$][\w$]*))\s*:\s*'([^']+)'", block.group(1)):
+            aliases[m.group(1) or m.group(2)] = m.group(3)
     return aliases
 
 
@@ -156,11 +158,14 @@ def main():
 
     # 3. i18n keys
     src = I18N.read_text(encoding='utf-8')
-    dicts = re.findall(r'^\s{2}(zh|en): \{(.*?)^\s{2}\},', src, re.S | re.M)
-    keys = {}
-    for lang, body in dicts:
-        keys[lang] = set(re.findall(r'^\s{4}(\w+):', body, re.M))
-    if keys.get('zh') and keys.get('en'):
+    # `const zh = {` and `const en: Dict = {`, each closed by a `}` in column 0.
+    dicts = dict(re.findall(r'^const (zh|en)(?:\s*:\s*[\w<>\[\] ]+)? = \{(.*?)^\}', src, re.S | re.M))
+    keys = {lang: set(re.findall(r'^  (\w+):', body, re.M)) for lang, body in dicts.items()}
+    if len(keys) != 2 or not all(keys.values()):
+        # Never pass quietly: this check silently stopped matching once already, when the
+        # two dictionaries moved out of a wrapper object.
+        problems.append('[i18n] could not read the zh and en dictionaries from i18n.ts; the parser needs updating')
+    else:
         for k in sorted(keys['zh'] - keys['en']):
             problems.append(f'[i18n] key "{k}" exists in zh but not in en')
         for k in sorted(keys['en'] - keys['zh']):

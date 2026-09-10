@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import { marked } from 'marked';
 import { characters, descriptionOrder, nameToSlug, scenes } from '../src/data/characters.config.mjs';
+import { CharactersSchema, StoriesSchema } from '../src/data/schema.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const site = path.resolve(here, '..');
@@ -85,13 +86,51 @@ function excerptOf(body) {
   return body
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .find((l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**') && !l.startsWith('<!--'));
+    .find(
+      (l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**') && !l.startsWith('<!--'),
+    );
 }
 
 const knownSlugs = new Set(characters.map((c) => c.slug));
+/** A name as written in a bible or a story's frontmatter → the character's slug, or null. */
 function resolveSlug(value) {
   const raw = String(value).trim();
-  return knownSlugs.has(raw) ? raw : nameToSlug[raw] ?? nameToSlug[raw.toLowerCase()] ?? null;
+  return knownSlugs.has(raw) ? raw : (nameToSlug[raw] ?? nameToSlug[raw.toLowerCase()] ?? null);
+}
+
+/**
+ * A story's `memories:` frontmatter → [slug, fields] pairs, dropping unknown names.
+ * Both languages read the same shape, so they share this.
+ */
+function memoryEntries(raw) {
+  return Object.entries(raw ?? {}).flatMap(([name, value]) => {
+    const slug = resolveSlug(name);
+    if (!slug || !value || typeof value !== 'object') return [];
+    return [
+      [
+        slug,
+        {
+          title: String(value.title ?? ''),
+          knowledge: String(value.knowledge ?? 'witnessed'),
+          summary: String(value.summary ?? ''),
+          impact: value.impact ? String(value.impact) : null,
+        },
+      ],
+    ];
+  });
+}
+
+/** Check generated data against src/data/schema.ts and stop the build on the first bad record. */
+function validate(schema, value, what, labelOf) {
+  const result = schema.safeParse(value);
+  if (result.success) return result.data;
+  console.error(`[sync] ${what} failed validation:`);
+  for (const issue of result.error.issues.slice(0, 20)) {
+    const [index, ...rest] = issue.path;
+    const where = labelOf && typeof index === 'number' ? labelOf(index) : String(index ?? '');
+    console.error(`  ${[where, ...rest].filter((p) => p !== '').join('.')}: ${issue.message}`);
+  }
+  process.exit(1);
 }
 
 // ---- bible parsing ----------------------------------------------------------
@@ -99,7 +138,7 @@ function resolveSlug(value) {
 function linkNames(html) {
   // **haide** → <a href="../haide/">haide</a> (relative link works from any /<lang>/characters/<slug>/ page)
   return html.replace(/<strong>([^<]+)<\/strong>/g, (m, name) => {
-    const slug = nameToSlug[name.trim()] ?? nameToSlug[name.trim().toLowerCase()];
+    const slug = resolveSlug(name);
     return slug ? `<a class="name-link" data-slug="${slug}" href="../${slug}/">${name}</a>` : m;
   });
 }
@@ -108,20 +147,22 @@ function linkNames(html) {
 // section names so descriptionOrder / relations / phrases resolve for both languages.
 // Keep this table in sync with .agents/skills/translate-en/SKILL.md.
 const SECTION_ALIASES = {
-  'Basics': '基本信息',
+  Basics: '基本信息',
   'Core personality': '性格核心',
   'Personality in the design': '外形里的性格线索',
-  'Habits': '行为习惯',
+  Habits: '行为习惯',
   'Expressions and moods': '表情与情绪',
   'Likes / dislikes': '喜欢 / 讨厌',
   'Strengths and growth': '优点与课题',
   'Meaning of the props': '道具的意义',
-  'Relationships': '和其他人的相处',
+  Relationships: '和其他人的相处',
 };
 const canonTitle = (t) => SECTION_ALIASES[t] ?? t;
 const isExtra = (s) => s.canon.startsWith('额外设定') || /^Extra(\s[^:：]+)?[:：]/.test(s.title);
 const extraLabel = (s) =>
-  s.title.replace(/^额外设定[一二三四五六七八九十]?[:：]?\s*/, '').replace(/^Extra(\s[^:：]+)?[:：]\s*/, '') || s.title;
+  s.title
+    .replace(/^额外设定[一二三四五六七八九十]?[:：]?\s*/, '')
+    .replace(/^Extra(\s[^:：]+)?[:：]\s*/, '') || s.title;
 
 function parseBible(md) {
   const lines = md.split(/\r?\n/);
@@ -152,7 +193,9 @@ function parseBible(md) {
   const phraseLine = habits?.lines.find((l) => l.includes('口头禅') || /catchphrase/i.test(l));
   // Chinese catchphrases stay short by nature; English ones need more room to stay quotable.
   const phrases = phraseLine
-    ? [...phraseLine.matchAll(/"([^"]+)"/g)].map((m) => m[1]).filter((p) => p.length <= (/[\u4e00-\u9fff]/.test(p) ? 24 : 60))
+    ? [...phraseLine.matchAll(/"([^"]+)"/g)]
+        .map((m) => m[1])
+        .filter((p) => p.length <= (/[\u4e00-\u9fff]/.test(p) ? 24 : 60))
     : [];
 
   const toHtml = (s) => marked.parse(s.lines.join('\n').trim());
@@ -162,9 +205,7 @@ function parseBible(md) {
     .filter(Boolean)
     .map((s) => ({ title: s.title, html: toHtml(s) }));
 
-  const extras = sections
-    .filter(isExtra)
-    .map((s) => ({ title: extraLabel(s), html: toHtml(s) }));
+  const extras = sections.filter(isExtra).map((s) => ({ title: extraLabel(s), html: toHtml(s) }));
 
   const relSec = bySection('和其他人的相处');
   const relations = relSec
@@ -172,9 +213,7 @@ function parseBible(md) {
         .filter((l) => l.startsWith('- '))
         .map((l) => {
           const html = linkNames(marked.parseInline(l.slice(2).trim()));
-          const targets = [...l.matchAll(/\*\*([^*]+)\*\*/g)]
-            .map((m) => nameToSlug[m[1].trim()] ?? nameToSlug[m[1].trim().toLowerCase()])
-            .filter(Boolean);
+          const targets = [...l.matchAll(/\*\*([^*]+)\*\*/g)].map((m) => resolveSlug(m[1])).filter(Boolean);
           return { html, targets: [...new Set(targets)] };
         })
     : [];
@@ -229,6 +268,7 @@ for (const c of characters) {
     en,
   });
 }
+validate(CharactersSchema, charOut, 'characters.json', (i) => charOut[i]?.slug ?? `#${i}`);
 fs.writeFileSync(path.join(outData, 'characters.json'), JSON.stringify(charOut, null, 2));
 console.log(`[sync] ${charOut.length} characters`);
 
@@ -244,21 +284,7 @@ if (fs.existsSync(STORIES)) {
     // strip the first H1 (title is rendered from frontmatter)
     const body = content.replace(/^\s*# .+\n/, '');
     const cast = (data.cast ?? []).map(resolveSlug).filter(Boolean);
-    const memories = Object.entries(data.memories ?? {})
-      .map(([name, value]) => {
-        const character = resolveSlug(name);
-        const memory = value && typeof value === 'object' ? value : {};
-        return character
-          ? {
-              character,
-              title: String(memory.title ?? ''),
-              knowledge: String(memory.knowledge ?? 'witnessed'),
-              summary: String(memory.summary ?? ''),
-              impact: memory.impact ? String(memory.impact) : null,
-            }
-          : null;
-      })
-      .filter(Boolean);
+    const memories = memoryEntries(data.memories).map(([character, m]) => ({ character, ...m }));
     const storyAssets = path.join(STORIES, 'assets');
     const cover = latestVersion(storyAssets, `${stem}-v`, '(\\d+)\\.png');
     const illustrations = latestIllustrations(storyAssets, stem);
@@ -275,16 +301,12 @@ if (fs.existsSync(STORIES)) {
     if (fs.existsSync(enPath)) {
       const twin = matter(fs.readFileSync(enPath, 'utf8'));
       const enBody = twin.content.replace(/^\s*# .+\n/, '');
-      const enMemories = {};
-      for (const [name, value] of Object.entries(twin.data.memories ?? {})) {
-        const slug = resolveSlug(name);
-        if (!slug || !value || typeof value !== 'object') continue;
-        enMemories[slug] = {
-          title: String(value.title ?? ''),
-          summary: String(value.summary ?? ''),
-          impact: value.impact ? String(value.impact) : null,
-        };
-      }
+      const enMemories = Object.fromEntries(
+        memoryEntries(twin.data.memories).map(([slug, m]) => [
+          slug,
+          { title: m.title, summary: m.summary, impact: m.impact },
+        ]),
+      );
       en = {
         title: String(twin.data.title ?? data.title ?? stem),
         framing: twin.data.framing ? String(twin.data.framing) : null,
@@ -300,16 +322,19 @@ if (fs.existsSync(STORIES)) {
       .filter(Boolean)
       .filter((l) => {
         const known = scenes.some((sc) => sc.file === l);
-        if (!known) console.warn(`[sync] ${f}: unknown location "${l}" (not in characters.config.mjs scenes)`);
+        if (!known)
+          console.warn(`[sync] ${f}: unknown location "${l}" (not in characters.config.mjs scenes)`);
         return known;
       });
     storyOut.push({
       slug: stem,
       title: data.title ?? stem,
       cast,
-      location: locations[0] ?? null,
       locations,
-      date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : String(data.date ?? '').slice(0, 10),
+      date:
+        data.date instanceof Date
+          ? data.date.toISOString().slice(0, 10)
+          : String(data.date ?? '').slice(0, 10),
       source: data.source ?? null,
       kind: data.type === 'extra' ? 'extra' : 'memory',
       timeline: Number.isFinite(Number(data.timeline)) ? Number(data.timeline) : null,
@@ -327,6 +352,7 @@ storyOut.sort((a, b) => {
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;
   return (b.timeline ?? -1) - (a.timeline ?? -1);
 });
+validate(StoriesSchema, storyOut, 'stories.json', (i) => storyOut[i]?.slug ?? `#${i}`);
 fs.writeFileSync(path.join(outData, 'stories.json'), JSON.stringify(storyOut, null, 2));
 console.log(`[sync] ${storyOut.length} stories`);
 
@@ -334,8 +360,12 @@ console.log(`[sync] ${storyOut.length} stories`);
 
 let nScenes = 0;
 for (const s of scenes) {
-  if (copyIfNewer(path.join(SCENES, `${s.file}.png`), path.join(outAssets, 'scenes', `${s.file}.png`))) nScenes++;
+  if (copyIfNewer(path.join(SCENES, `${s.file}.png`), path.join(outAssets, 'scenes', `${s.file}.png`)))
+    nScenes++;
 }
 console.log(`[sync] ${nScenes} scenes`);
-copyIfNewer(path.join(site, 'group-photo', 'group-photo-final-v1.png'), path.join(outAssets, 'group-photo.png'));
+copyIfNewer(
+  path.join(site, 'group-photo', 'group-photo-final-v1.png'),
+  path.join(outAssets, 'group-photo.png'),
+);
 console.log('[sync] done');

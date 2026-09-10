@@ -29,7 +29,9 @@ const s = t(lang);
       <p>{s.charactersSub}</p>
     </div>
     <div class="grid">
-      {characters.map((c, i) => <CharacterCard c={c} lang={lang} index={i} />)}
+      {characters.map((c, i) => (
+        <CharacterCard c={c} lang={lang} index={i} />
+      ))}
     </div>
   </section>
 

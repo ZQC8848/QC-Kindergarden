@@ -16,30 +16,32 @@ const spots = groupLayers
 
 <figure class="photo" data-group-photo>
   <div class="canvas">
-  {groupPhoto && (
-    <Image
-      src={groupPhoto}
-      alt={s.hero.alt}
-      widths={[720, 1200, 1600, 2000]}
-      sizes="(max-width: 1240px) 100vw, 1200px"
-      loading="eager"
-      fetchpriority="high"
-    />
-  )}
-  <ul class="spots" aria-label={s.charactersTitle}>
-    {spots.map((p, i) => {
-      const c = bySlug[p.slug];
-      const at = p.spot ?? { x: p.x, y: p.y };
-      return (
-        <li style={`left:${at.x * 100}%;top:${at.y * 100}%;--i:${i};--accent:${c.accent};--on-accent:${onAccent(c.accent)};`}>
-          <a href={`/${lang}/characters/${c.slug}/`} aria-label={nameOf(c, lang)}>
-            <span class="dot" />
-            <span class="label">{nameOf(c, lang)}</span>
-          </a>
-        </li>
-      );
-    })}
-  </ul>
+    {groupPhoto && (
+      <Image
+        src={groupPhoto}
+        alt={s.hero.alt}
+        widths={[720, 1200, 1600, 2000]}
+        sizes="(max-width: 1240px) 100vw, 1200px"
+        loading="eager"
+        fetchpriority="high"
+      />
+    )}
+    <ul class="spots" aria-label={s.charactersTitle}>
+      {spots.map((p, i) => {
+        const c = bySlug[p.slug];
+        const at = p.spot ?? { x: p.x, y: p.y };
+        return (
+          <li
+            style={`left:${at.x * 100}%;top:${at.y * 100}%;--i:${i};--accent:${c.accent};--on-accent:${onAccent(c.accent)};`}
+          >
+            <a href={`/${lang}/characters/${c.slug}/`} aria-label={nameOf(c, lang)}>
+              <span class="dot" />
+              <span class="label">{nameOf(c, lang)}</span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
   </div>
   <figcaption>{s.hero.hint}</figcaption>
 </figure>
