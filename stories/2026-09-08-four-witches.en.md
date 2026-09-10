@@ -45,13 +45,13 @@ He stops to make sure both of them are listening.
 
 "From that day, for most of a month, Fufu looked at me differently. She used to look at me like a friend. Now she looks at me like a savings account. Every day she asks me to the snack shop. Three times a day. Something felt off. I never went once."
 
-Mushi strokes his chin. "Well…" He folds his arms and narrows his eyes. "This doesn't come free."
+Mushi makes a small "oh" and his eyes light up. "I know this one—"
 
-Haide stares at him.
+He claps a hand over his own mouth.
 
-Three seconds.
+Half a second.
 
-"Fine, fine, I'll tell you." Mushi deflates. "Fufu did ask me a question once. She asked how much a dog about Haide's age would go for, if you sold it."
+"…Fufu did ask me a question once." He says it through his fingers. "She asked how much a dog about Haide's age would go for, if you sold it."
 
 Haide's tail stops.
 
@@ -155,7 +155,7 @@ He picks up his pen. On the paper with its sun full of smiling faces, he draws f
 
 <!-- illustration:3|Mushi's drawing: Five Witches and a Fleeing Dog -->
 
-"This one doesn't come free," he tells himself, then adds, "…forget it, he wouldn't pay anyway."
+"I have to tell someone about this," he says to himself, and looks up. There is one person left in the room.
 
 Whiskle turns back and goes on painting his leaf.
 

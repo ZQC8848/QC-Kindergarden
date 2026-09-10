@@ -64,7 +64,7 @@ All rows below were approved by QC on 2026-09-09; reusable terms are in the glos
 | 伪娘人设 | written so pretty that everyone takes him for a girl | 英文没有不冒犯的对应词，改用描述。 | "trap"（网络俚语，含贬义，弃）；"femboy"（同上） | qc-nightmare.en.md | approved |
 | 我说过的。 | I told you. | Mimi 三个字，英文也要三个词。 | I said so.（弱）；Told you so.（太得意，Mimi 是平的） | haide-became-a-dog.en.md，Mimi bible | approved |
 | 有我在。 | I've got you. | 比 "I'm here" 更像队长。 | I'm here.（牧师那句用了 "It's okay, I'm here."，两人区分开） | Mimi bible | approved |
-| 这个嘛……不能白说哦。 | Well… this doesn't come free. | 牧师端架子的口头禅，要短，要能被 Haide 三秒盯垮。 | This information has a price（太长） | 牧师 bible，four-witches.en.md | approved |
+| 这个嘛……不能白说哦。 | ~~Well… this doesn't come free.~~ | 已作废（2026-09-10）：QC 取消了牧师收费的人设，中英两侧的这句台词都已删除，改为「憋不住直接说」。 | — | 已从 牧师 bible 与 four-witches.en.md 移除 | retired |
 | 别逼我骂你。 | Don't make me swear at you. | 直译即可。 | Don't push me.（丢了"骂"） | 陆姚 bible | approved |
 | 靠 / 滚 / 你他妈 | "Damn", "get lost" and "you f—" | bible 明确列出脏话，英文降一档并截断，符合 skill"脏话暗示不拼写"的原则。 | 完整拼写（超出原文尺度） | 陆姚 bible | approved |
 | 理论上可行，但需要极高的智商。 | Theoretically feasible. Requires an extremely high IQ. | 拆成两句，像点儿的笔记。 | 一句话版本（少了笔记感） | midnight-ferrari.en.md，点儿 / QC bible | approved |

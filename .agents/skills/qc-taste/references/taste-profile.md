@@ -31,7 +31,7 @@ The strongest QC characters have an immediately legible surface and a contrary i
 - the soft girl who imagines herself roaring through the city on a motorcycle;
 - the refined, distant student who secretly games through the night;
 - the dog who is the smartest and most accomplished member of the group;
-- the warm information broker who performs a fee negotiation and then talks for free.
+- the warm listener whose caring and whose digging for gossip are the same act.
 
 The contradiction must change behavior, not remain a descriptive adjective. Prefer a reveal that makes earlier behavior funnier or more meaningful.
 

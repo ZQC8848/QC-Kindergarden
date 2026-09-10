@@ -81,7 +81,7 @@ Display names come from `website/src/data/characters.config.mjs` (`en.name`). Lo
 | Ruanruan | "…Is that okay?" · "Bun-bun says…" |
 | Lukos | "Are you okay?" |
 | Whiskle | "I really am a boy." · "It's growing." |
-| Mushi | "Have you heard?" · "Well… this doesn't come free." |
+| Mushi | "Have you heard?" · "Listen, but don't tell anyone." |
 | Dianer | "Why does that happen?" · "Hang on, let me work it out." |
 | Luyao | "Don't make me swear at you." · "Plan." |
 | Liiie | "Of course, no problem." |
