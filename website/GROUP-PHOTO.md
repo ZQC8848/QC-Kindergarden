@@ -1,16 +1,15 @@
 # 首页合照构思
 
-日期：2026-09-08　状态：概念稿与 12 人姿态稿完成，待统一抠图与正式合成　上位文档：[DESIGN.md](DESIGN.md)（首页四层之第一层）
+日期：2026-09-08　状态：合照已合成上线，过程稿已清理　上位文档：[DESIGN.md](DESIGN.md)（首页四层之第一层）
 
 ## 执行状态
 
-- 全员构图概念稿：`website/group-photo/work/concept-v1.png`
-- 16:9 无人物背景层：`website/group-photo/work/background-16x9-v1.png`
-- 12 人白底姿态候选：`website/group-photo/work/<角色>-pose-candidate-v1.png`
-- 角色身份总表：`website/group-photo/work/identity-sheet.png`
-- 身份总表生成工具：`website/group-photo/_tools/build_identity_sheet.py`
+- 成品合照：`website/group-photo/group-photo-final-v1.png`（网站首页用）与 `-4k.png`
+- 站位坐标与热区：`website/group-photo/composition.json`，网站 `GroupPhoto.astro` 直接读它
+- 早期站位草图：`website/group-photo/layout-sketch.png`
+- 身份总表生成工具：`website/group-photo/_tools/build_identity_sheet.py`，输出到 `work/`（不入库）
 
-概念稿一次生成即包含准确的 12 位角色，没有缺人或重复，人物色彩和主动作关系可作为正式合成母版。当前内置图像生成器即使要求透明背景，仍会把棋盘格烘进 RGB，不能冒充真正的 alpha 图层。因此单人姿态统一保存为白底候选，下一步集中完成背景提取、边缘检查、接触阴影和正式分层合成。
+概念稿一次生成即包含准确的 12 位角色，没有缺人或重复。当前内置图像生成器即使要求透明背景，仍会把棋盘格烘进 RGB，不能冒充真正的 alpha 图层，因此单人姿态当时统一保存为白底候选。合成完成后过程稿已于 2026-09-09 删除（27 MB），`work/` 之后只放不入库的临时产物。
 
 ## 一句话概念
 

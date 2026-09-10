@@ -1,6 +1,6 @@
 ---
 name: translate-en
-description: Produce and maintain the English version of the QC Kindergarten website: character bibles (性格设定.en.md), stories (stories/<slug>.en.md), UI strings (website/src/i18n.ts) and config names, so that every page element except image content reads in English. Use when the user asks to translate the site, add English for a character or story, check English coverage, or review a liberal translation. Translate for literary and dramatic effect over literal accuracy, act first, then report every non-literal choice to QC with reasons and alternatives.
+description: Produce and maintain the English version of the QC Kindergarten website, covering character bibles (性格设定.en.md), stories (stories/<slug>.en.md), UI strings (website/src/i18n.ts) and config names, so that every page element except image content reads in English. Use when the user asks to translate the site, add English for a character or story, check English coverage, or review a liberal translation. Translate for literary and dramatic effect over literal accuracy, act first, then report every non-literal choice to QC with reasons and alternatives.
 ---
 
 # Translate EN
@@ -23,7 +23,7 @@ Image content (posters, expression sheets, illustrations, scene art) is out of s
 
 ## Workflow
 
-1. **Audit first.** Run `python .agents/skills/translate-en/scripts/audit_en.py` from the repository root. It lists missing `.en.md` files, structural mismatches between a Chinese file and its English twin, and, if `website/dist/` exists, every `/en/` page that still contains Chinese characters.
+1. **Audit first.** Run `python tools/audit_en.py` from the repository root. It lists missing `.en.md` files, structural mismatches between a Chinese file and its English twin, and, if `website/dist/` exists, every `/en/` page that still contains Chinese characters.
 2. **Read before writing.** For a bible, read the full Chinese bible and the character's relationships in other bibles. For a story, read the Chinese story, its cast's bibles, and any earlier story it references. Never translate a paragraph in isolation.
 3. **Translate one layer at a time**, in this order: config names → UI strings → bibles → stories → captions. Names decided in step one are used everywhere after.
 4. **Sync and build.** In `website/`, run `npm run sync` then `npx astro build`. Fix build errors before continuing.
@@ -132,7 +132,7 @@ Rules for the report:
 
 ## Audit script
 
-`scripts/audit_en.py` checks, without any dependency beyond Python 3:
+`tools/audit_en.py` checks, without any dependency beyond Python 3:
 
 - every character folder has `性格设定.en.md`, and its headings cover every Chinese section through the alias table
 - every story has `<slug>.en.md`, with matching memory keys and matching illustration marker numbers

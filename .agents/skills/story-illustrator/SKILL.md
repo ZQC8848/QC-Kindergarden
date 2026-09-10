@@ -25,7 +25,7 @@ Read only the material needed for the requested story:
 - Important props: `props/` and the character bible
 - Location design when applicable: `Scene Reference/`
 - Reusable scene registry: `website/src/data/characters.config.mjs`, `scenes`
-- Minor or one-episode character references: `character reference/其他人物/`
+- Minor or one-episode character references: `character reference/_guests/`
 - Asset naming rules: `stories/README.md`
 
 English display names use initial-cap format (`Fufu`, `Haide`, `Lukos`, `Whiskle`, `Mimi`, `Liiie`); `QC` remains uppercase. Lowercase values such as `haide` are stable data slugs, not display names.
@@ -38,7 +38,7 @@ Before completing the proposal, audit every proposed illustration for reusable s
 
 - A location is ready only when a suitable reusable image exists in `Scene Reference/` and its file is registered in the `scenes` array in `website/src/data/characters.config.mjs`.
 - A recurring cast member is ready only when its normal `character reference/<Character>-<mbti>/` identity sources exist.
-- Any visually present person who is not a recurring cast member needs a lightweight guest-character reference under `character reference/其他人物/`.
+- Any visually present person who is not a recurring cast member needs a lightweight guest-character reference under `character reference/_guests/`.
 
 Do not silently substitute a generic background or anonymous human shape when either source is missing. List each missing asset under `需先补齐的可复用资产` in the proposal. For a new scene, give its proposed `SceneKey`, Chinese and English display names, defining visual features, and intended reference filename. For a guest character, give its proposed identifier, narrative role, silhouette, clothing, and the reason the person should remain visually secondary.
 
@@ -62,7 +62,7 @@ Return a proposal with this structure:
 
 需先补齐的可复用资产：
 - 场景：`SceneKey` — 生成内容、登记位置与文件名（如无则写“无”）
-- 其他人物：`人物标识` — 三视图和简要设定的内容与文件名（如无则写“无”）
+- _guests：`人物标识` — 三视图和简要设定的内容与文件名（如无则写“无”）
 
 ### 1. 插画暂定名
 - 对应段落：故事中的具体时刻
@@ -113,7 +113,7 @@ Long-term cast and one-episode/background people must be visually distinguishabl
 
 For every visually present person without an existing main or guest reference:
 
-1. Create `character reference/其他人物/<guest-id>/`.
+1. Create `character reference/_guests/<guest-id>/`.
 2. Write a concise `性格设定.md` containing: display name or role label, story/function, body silhouette, hair/head shape, clothing palette, signature prop if any, and the mandatory eyeless treatment. Keep personality and backstory minimal unless the story establishes them.
 3. Generate a consistent front / three-quarter / side / back turnaround and save it under `turnaround/<guest-id>_turnaround_v1.png`, incrementing the version rather than overwriting later revisions.
 4. In the turnaround and every story illustration, draw no visible eyes, pupils, irises, sclera, eye highlights, eyelids, eye outlines, or closed-eye lines. By default, replace the entire eye region with one contiguous, clean-edged, smooth matte shadow block whose upper edge is hidden by fringe, a hat, or the facial plane. The default shadow block has no felt, wool, knit, fiber, pore, grain, mottling, gradient, or feathered texture. An explicitly approved guest bible or latest approved turnaround may override the default boundary softness, texture, or eyebrow treatment; preserve that character-specific treatment exactly rather than normalizing every guest to the default. The face may retain a nose or mouth below the shadow when useful, but the treatment must make the guest immediately read as a temporary/background person rather than a main character.

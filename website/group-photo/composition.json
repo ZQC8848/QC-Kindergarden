@@ -1,8 +1,6 @@
 {
   "canvas": {
       "aspectRatio": "16:9",
-      "background": "work/background-16x9-v1.png",
-      "concept": "work/concept-v1.png",
       "light": "warm golden, upper-left key",
       "camera": "child eye-level, slight low angle"
   },

@@ -1,6 +1,6 @@
 # 架构清晰度：修复方案
 
-日期：2026-09-09　基线：main `9a94556`　上位文档：[2026-09-09-project-review.md](2026-09-09-project-review.md)
+日期：2026-09-09　基线：main `9a94556`　状态：已执行（见文末执行记录）　上位文档：[2026-09-09-project-review.md](2026-09-09-project-review.md)
 
 ## 先更正上一份报告的两处错误
 
@@ -162,3 +162,29 @@ description: <与正本逐字相同>
 不需要你拍板、我可以立刻做的：**A1**（skill 桩 + 脚本归位 + 校验）、**A4**（清 105 行死设定）、**A3 的 `_guests` 改名**、**A5 的 `站位图.png` 归位与三处死路径修正**。四项约 1.5 小时，全部走一个提交，做完跑 build + audit + 类型检查验证。
 
 等你回答后再做的：A2 的仓库改名、A5 的 work/ 删图、客串角色方案。
+
+
+---
+
+## 执行记录（2026-09-09）
+
+QC 的三个决定：仓库已改名、`work/` 图片可删、客串角色不上网站。据此全部执行。
+
+| 项 | 结果 |
+|---|---|
+| A1 双 agent 生态 | `.agents/skills/` 为唯一实现；`.claude/skills/` 下五个转发桩由 `tools/skill_stubs.py` 生成并校验；孤儿 `fieldnotes` 副本（8 文件）删除；共用的 `audit_en.py` 移到 `tools/`，钩子不再跨界 |
+| A2 改名 | remote 改指 `QC-Kindergarten.git`（`Base.astro` 的链接此前已更新）；本地目录名保持不变 |
+| A3 目录命名 | `其他人物/` → `_guests/`；两个带空格的英文目录按方案保留 |
+| A4 真源规则 | 六段"事件档案（已迁移）"共 105 行删除，改为指向故事的指针；两条会丢失的信息先补进正文 |
+| A5 游离资产 | `group-photo/work/` 14 个文件（27 MB）删除，`work/` 加进 gitignore；`站位图.png` → `group-photo/layout-sketch.png`；三处死路径修正；客串角色规则写进 `stories/README.md` |
+
+**执行中发现并修掉的额外问题**：`translate-en` 的 frontmatter 是无效 YAML（description 里有裸冒号），gray-matter 直接解析失败，Claude 的 skill 列表把正文当成了描述。已改写措辞去掉冒号，并在 `skill_stubs.py` 里加了这项检查，防止复发。
+
+**两条差点丢失的信息，删档案段前已补**：
+- QC 在派对上说的"感觉当狗也挺不错的"，以及由此变得更不积极 → 补进《七天追咬事件》中英文正文。
+- Liiie 不争第一的态度"传说就该是传说呢" → 并进她的死宅常驻段。
+- 另外两条（Haide 的贝壳、艾莎记的月度香水味）核对后确认已在 QC 的道具段和艾莎的关系段，无需动作。
+
+**验证**：`tools/skill_stubs.py` 通过；`tools/audit_en.py` 通过；两个钩子端到端跑通；`npm run build` 63 页不变；五个 skill 现在都出现在 Claude 的 skill 列表里；正本与桩的 name / description 逐字一致。
+
+**未做**：本地目录改名（等你有空，改完要重开会话）。

@@ -48,7 +48,7 @@ if not is_bilingual_content(path):
     sys.exit(0)
 
 project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
-audit = project_dir / ".agents" / "skills" / "translate-en" / "scripts" / "audit_en.py"
+audit = project_dir / "tools" / "audit_en.py"
 
 try:
     result = subprocess.run(

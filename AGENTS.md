@@ -4,13 +4,25 @@
 
 ## 目录
 
-- `character reference/` — 12 个角色，每人一个文件夹：参考图、三视图、表情表、`性格设定.md`（中文 bible）。生成脚本在 `_tools/`。
+- `character reference/` — 12 个角色，每人一个文件夹：参考图、三视图、表情表、`性格设定.md`（中文 bible）与 `性格设定.en.md`。生成脚本在 `_tools/`，客串角色在 `_guests/`（不上网站）。
+- `stories/` — 情景喜剧故事，跨人物事件的唯一正式来源。规则见 `stories/README.md`。
+- `Scene Reference/` — 场景参考图，故事的 `location` 与网站地点页都引用它。
+- `website/` — Astro 双语站，构建时从上面三个目录同步内容。跑法见 `website/README.md`。
+- `tools/` — 两个 agent 共用的脚本：`audit_en.py`（中英覆盖审计）、`skill_stubs.py`（skill 桩同步）。
+- `docs/` — 项目检测与整改记录。
 - `ResearchAssets/` — **私有 submodule**，研究 / 论文 / 申请材料。主仓库公开，这个目录不公开。改动流程见 `ResearchAssets/AGENTS.md`。
-- `.agents/skills/fieldnotes/` — 项目知识记录 skill。
-- `.agents/skills/story-illustrator/` — 故事插画提案、可复用资产准备与生成工作流。
-- `.agents/skills/qc-taste/` — 从人类创作决策中提炼并延续 QC 的可更新创作 taste；正式规则更新需要 QC 批准。
-- `.agents/skills/translate-en/` — 网站英文版翻译工作流：覆盖审计、文学性优先的译法、意译决策汇报。
-- `.agents/skills/discord-notify/` — 新故事 / 新插图上线后，通过 Discord webhook 发不剧透的更新通知，附网站链接。
+
+## Skill 放在哪
+
+`.agents/skills/` 是唯一实现，五个 skill 都在这里。`.claude/skills/` 下是同名的三行转发桩，只重复 frontmatter，正文指回正本。Codex 直接读正本，Claude Code 读到桩后再打开正本，两边看到的是同一份指令。
+
+改完 skill 跑 `python tools/skill_stubs.py --write` 更新桩，`python tools/skill_stubs.py` 校验（描述不一致会退出码 1）。**不要**在 `.claude/skills/` 下写内容。
+
+- `fieldnotes` — 项目知识记录。
+- `story-illustrator` — 故事插画提案、可复用资产准备与生成工作流。
+- `qc-taste` — 从人类创作决策中提炼并延续 QC 的可更新创作 taste；正式规则更新需要 QC 批准。
+- `translate-en` — 网站英文版翻译工作流：覆盖审计、文学性优先的译法、意译决策汇报。
+- `discord-notify` — 新故事 / 新插图上线后，通过 Discord webhook 发不剧透的更新通知，附网站链接。
 
 ## 当前研究方向
 

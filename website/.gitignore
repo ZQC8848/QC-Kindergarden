@@ -1,4 +1,7 @@
 node_modules/
+
+# 合照过程稿与工具临时产物，不入库
+group-photo/work/
 dist/
 .astro/
 src/assets/characters/

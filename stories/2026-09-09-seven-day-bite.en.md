@@ -43,7 +43,7 @@ On the seventh day QC finally raised both hands. "I was wrong. Never. I swear."
 
 Haide let go and tilted his head at him. The meaning was clear: and?
 
-In the end QC agreed to drive him to a beach party in the gold convertible Ferrari on the last day of every month. Haide found this compensation entirely satisfactory. Aisha, meanwhile, wrote in the Red Book:
+In the end QC agreed to drive him to a beach party in the gold convertible Ferrari on the last day of every month. Haide found this compensation entirely satisfactory: passed from one beautiful woman to the next all evening, tail going like a propeller, paws never touching the ground. QC watched for a long while, took a sip of orange juice, and said something that surprised him too: "Honestly, being a dog looks pretty good." From that day on he grew markedly less motivated to find a way to turn Haide back. Aisha, meanwhile, wrote in the Red Book:
 
 <!-- illustration:2|Compensation, last day of every month -->
 

@@ -53,10 +53,12 @@
 ## 建议的处理顺序
 
 **P0（一小时内，零风险）**
-- 修 2 个类型错误：把两处 `as X[]` 改成 `as unknown as X[]` 只是止血；正确做法见 P1 第一条。删掉 `sectionId` 未用参数。
-- `AGENTS.md` 为唯一正本，`CLAUDE.md` 改成一行 `@AGENTS.md`；删除 `.claude/skills/fieldnotes/`，让两个生态都读 `.agents/skills/`。
-- 更新四处漂移的文档。
-- 把 `website/站位图.png` 移到 `website/group-photo/work/`。
+- 修 2 个类型错误：把两处 `as X[]` 改成 `as unknown as X[]` 只是止血；正确做法见 P1 第一条。删掉 `sectionId` 未用参数。**未做，属代码质量。**
+- ~~`AGENTS.md` 为唯一正本，`CLAUDE.md` 改成一行 `@AGENTS.md`；删除 `.claude/skills/fieldnotes/`，让两个生态都读 `.agents/skills/`。~~ 2026-09-09 完成，见[修复方案](2026-09-09-architecture-fix-plan.md)执行记录。
+- 更新漂移的文档：GROUP-PHOTO.md 与 composition.json 的死引用已修；`website/README.md` 的 places 页与 `DESIGN.md` 的两处待办**未做，属可维护性**。
+- ~~把 `website/站位图.png` 移到 `website/group-photo/`。~~ 完成。
+
+架构清晰度五项已于 2026-09-09 全部执行，代码质量与可维护性两组尚未开始。
 
 **P1（一天）**
 - 给 sync 输出加 schema：用 zod 定义 `Character` / `Story`，sync 脚本写出前 `parse()`，`content.ts` 用 `z.infer` 取类型，删掉手写 interface。frontmatter 非法值直接报错退出。

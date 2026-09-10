@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """English coverage audit for the QC Kindergarten site.
 
-Run from the repository root:  python .agents/skills/translate-en/scripts/audit_en.py [--dist]
+Run from the repository root:  python tools/audit_en.py [--dist]
 
 Checks (no dependencies beyond Python 3):
   1. every character folder has 性格设定.en.md whose headings cover every Chinese section
@@ -16,7 +16,7 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[1]
 CHAR_DIR = ROOT / 'character reference'
 STORIES = ROOT / 'stories'
 I18N = ROOT / 'website' / 'src' / 'i18n.ts'
@@ -108,7 +108,7 @@ def main():
     problems = []
 
     # 1. bibles
-    for folder in sorted(p for p in CHAR_DIR.iterdir() if p.is_dir() and not p.name.startswith('_') and p.name != '其他人物'):
+    for folder in sorted(p for p in CHAR_DIR.iterdir() if p.is_dir() and not p.name.startswith('_') and p.name != '_guests'):
         zh = folder / '性格设定.md'
         en = folder / '性格设定.en.md'
         if not zh.exists():
