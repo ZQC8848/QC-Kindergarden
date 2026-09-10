@@ -1,4 +1,4 @@
-version: "0.1"
+version: "0.2"
 evidence_through: "2026-09-09"
 status: "working-profile"
 
@@ -16,8 +16,8 @@ consumed_records:
     lines: 281
     consumed_on: "2026-09-09"
   - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md"
-    sha256: "920aafe65d70b119ab903473943241fd6dabe60a4a1937da7a3c6bf0c3318005"
-    lines: 1404
+    sha256: "b9f99a871207853190377f4607a6dd539d31be9b56d163b163ae347b7ad30d4f"
+    lines: 9818
     consumed_on: "2026-09-09"
   - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-website-design-and-english-translation.md"
     sha256: "f69bdecf581a0b0b417f292524b1d0679f923c799b25e4d1a7678d2e9b7ccc08"
@@ -35,13 +35,17 @@ consumed_records:
     sha256: "9bad0451fc8630290d5903433dcfb1d63d4357ea7a04c92f49cd7d802bdc12b8"
     lines: 1214
     consumed_on: "2026-09-09"
+  - path: "ResearchAssets/ai-chat-history/meta-2026-09-07-claude-code-research-value-and-creative-identity.md"
+    sha256: "e762dba17b0e2b7ef039bc8f4050cdc3143446d308eef5f2e59aa7fee9f1ee06"
+    lines: 1432
+    consumed_on: "2026-09-09"
 
 rules:
   - id: "T001"
     rule: "Start from character wants and contradictions; let theme emerge from their collision."
     scope: "qc-kindergarten.story"
     confidence: "stable"
-    evidence: ["E012"]
+    evidence: ["E012", "E019"]
     counterexamples: []
   - id: "T002"
     rule: "Give important characters a behavioral second self that contradicts their readable surface."
@@ -71,7 +75,7 @@ rules:
     rule: "Keep canonical events separate from each character's limited and subjective memory."
     scope: "qc-kindergarten.continuity"
     confidence: "stable"
-    evidence: ["E014"]
+    evidence: ["E014", "E021"]
     counterexamples: []
   - id: "T007"
     rule: "Use restrained delivery, short dialogue, delayed reaction, and under-explained endings."
@@ -83,7 +87,7 @@ rules:
     rule: "Optimize the project for funny, memorable entertainment rather than imposed thematic depth."
     scope: "qc-kindergarten.story"
     confidence: "stable"
-    evidence: ["E012"]
+    evidence: ["E012", "E019"]
     counterexamples: []
   - id: "T009"
     rule: "Allow characters to challenge their representation and turn authorship into an in-world joke."
@@ -101,7 +105,7 @@ rules:
     rule: "Compose ensemble art as a captured incident with hierarchy and reaction lines, not an evenly weighted lineup."
     scope: "qc-kindergarten.visual"
     confidence: "repeated"
-    evidence: ["E010", "E013"]
+    evidence: ["E010", "E013", "E020"]
     counterexamples: []
   - id: "T012"
     rule: "Use bold genre transformations while preserving each recurring character's identity anchors."
@@ -110,10 +114,10 @@ rules:
     evidence: ["E011"]
     counterexamples: []
   - id: "T013"
-    rule: "Apply requested visual corrections locally and preserve unrelated approved composition."
-    scope: "qc-kindergarten.visual_revision"
+    rule: "Apply requested corrections locally and preserve the unrelated approved result, in prose as well as image."
+    scope: "qc-kindergarten.revision"
     confidence: "repeated"
-    evidence: ["E002", "E013"]
+    evidence: ["E002", "E013", "E022"]
     counterexamples: []
   - id: "T014"
     rule: "Render temporary people without visible eyes and at lower visual complexity than long-term characters."
@@ -125,5 +129,26 @@ rules:
     rule: "For consequential creative generation, present the concept first and wait for explicit approval."
     scope: "qc-kindergarten.workflow"
     confidence: "stable"
-    evidence: ["E010", "E014", "E015"]
+    evidence: ["E010", "E014", "E015", "E021"]
     counterexamples: []
+  - id: "T016"
+    rule: "Exaggerate a character past the real person when it raises comic effect; fidelity to the real-world original is not the target."
+    scope: "qc-kindergarten.character"
+    confidence: "repeated"
+    evidence: ["E019", "E004", "E005"]
+    counterexamples: []
+    open_question: "No recorded case of QC calling an exaggeration too far, so the upper bound is unknown. Feedback in wechat-interaction-record/ is the likely place to find it."
+  - id: "T017"
+    rule: "Layer non-typological dimensions - interests, what others say about the person, past incidents - on top of the MBTI base so characters do not collapse into type stereotypes."
+    scope: "qc-kindergarten.character"
+    confidence: "provisional"
+    evidence: ["E019"]
+    counterexamples: []
+    open_question: "One explicit statement. The bibles enact it structurally, but that is artifact evidence. May later merge with T002."
+  - id: "T018"
+    rule: "When expanding a human seed, keep additions that attach to an established character trait and cut decorative ones that do not."
+    scope: "qc-kindergarten.story"
+    confidence: "provisional"
+    evidence: ["E022"]
+    counterexamples: []
+    open_question: "One event. May be specific to that story, where an extra figure in the painting would have disturbed the counting joke. Re-check at the next rejected polish."

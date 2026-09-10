@@ -1,8 +1,8 @@
 # QC taste profile
 
-Version: 0.1  
+Version: 0.2  
 Evidence through: 2026-09-09  
-Status: initial evidence-backed working profile
+Status: evidence-backed working profile
 
 ## What QC optimizes for
 
@@ -25,6 +25,16 @@ The strongest QC characters have an immediately legible surface and a contrary i
 
 The contradiction must change behavior, not remain a descriptive adjective. Prefer a reveal that makes earlier behavior funnier or more meaningful.
 
+### 2a. Exaggerate past the real person
+
+These characters are modelled on real people, but resemblance is not the target — comic effect is. QC's own account: overshooting the real personality often *improves* the result, because a virtual character is a mapping, not a portrait. So push a trait until it drives scenes: a quiet girl who fantasises about tearing through the city on a motorbike, a captain whose temper detonates on contact, a boy whose prank costs him his species.
+
+The known limit is that there is no known limit. Nothing in the record shows QC calling an exaggeration too far, so treat the ceiling as unmapped rather than absent, and expect the people being written about to be where it is eventually found.
+
+### 2b. Break the type with dimensions the type does not contain
+
+MBTI is the entry point, not the character. Two INFJs must not read alike. Add what a type cannot hold: what the person likes and refuses, what other characters say about them behind their back, a specific past incident, a habit with an object. A character built only from their four letters is a stereotype wearing a name.
+
 ### 3. Make absurdity causal
 
 Escalation can be extreme, dark, or ridiculous, but each step should grow from a prior character choice. A curse becomes real because Haide immediately breaks his promise; a week-long pursuit follows one careless joke; unexplained speeding tickets connect to dog hair, intelligence, and a permissive uncle. Avoid randomness that could be transferred unchanged to any cast.
@@ -44,6 +54,10 @@ For canonical events, distinguish what happened from what each person witnessed,
 ### 7. Deliver the joke with restraint
 
 Prefer short dialogue, concrete action, delayed reaction, and one strategically repeated line. Leave the audience one inference to make. Do not explain the joke after it lands or turn every beat into narration about personality.
+
+### 7a. Expand a seed by attachment, not decoration
+
+When QC supplies a premise, additions earn their place by attaching to something already established. In the four-witches story three original details were added to QC's seed; the one that survived hooked onto Whiskle being mistaken for a girl, and the two that were cut — Haide painting himself into his own picture, Mushi sneaking a fifth hat onto the canvas — were merely charming. Charm is not attachment. Before adding a beat, name the existing trait, object, or running joke it hangs from; if there is none, cut it.
 
 ### 8. End on an altered recurring behavior
 
@@ -79,9 +93,11 @@ Alternate costumes and sharp tonal shifts—cute felt figures restaged as biker-
 
 Long-term characters have expressive, readable eyes. Temporary or background people in this project have no drawn eyes; the eye region is replaced by deliberate shadow. They share the felted-toy world but use simpler shapes, fewer signature accessories, and lower contrast.
 
-### 16. Revise locally once the composition is approved
+### 16. Revise locally once the result is approved
 
 When QC names a specific defect, preserve unrelated approved elements. Correct contact, anatomy, scale, shadow, object orientation, or empty-space balance precisely instead of regenerating the entire creative concept without need.
+
+This holds for prose as well. "Haide didn't paint himself in, the witches have no hats" is two deletions, not a rewrite: everything else in that draft — the speech patterns, the four-act structure, the running count gag — stayed. Take a correction at exactly its stated size.
 
 ## Negative boundaries
 
@@ -92,9 +108,15 @@ When QC names a specific defect, preserve unrelated approved elements. Correct c
 - Do not make every character equally loud or equally central.
 - Do not expose a secret inside a limited character viewpoint.
 - Do not recycle an existing punchline merely to appear consistent.
+- Do not add a charming detail that hangs from nothing already established.
+- Do not treat resemblance to the real person as the goal, or as a limit on exaggeration.
 - Do not over-explain emotional subtext, symbolism, or the final joke.
 - Do not confuse production workflow preferences with creative taste.
 
 ## Applying the profile without flattening it
+
+**The default division of labour.** QC supplies the base idea plus taste-level additions; the connective structure — relationships, reactions, the detail that makes a beat land — is expected from the model. So apply mode expands the seed rather than replacing it, and fills in the connective tissue without being asked. Handing back the seed with nothing added is as wrong as overwriting it.
+
+**QC's own caution about this profile, kept verbatim because it is the brake.** On whether taste-driven work is actually better: 「我通过我的taste生成的故事 当然符合我的taste 所以我觉得他好，但是如果没有我的taste ，纯ai生成的故事，我不能够假设别人觉得他不好」— and separately, that AI style and taste tend to converge. This profile is a record of what QC chooses, not evidence that those choices are better. Do not cite it as a quality standard, to QC or to anyone else.
 
 Use the smallest relevant subset of rules. A quiet scene may need contradiction, viewpoint, and a restrained callback but no large escalation. A poster may need silhouette and hierarchy but no narrative ending. Novelty is successful when the result follows the same selection logic without resembling an existing episode beat-for-beat.
