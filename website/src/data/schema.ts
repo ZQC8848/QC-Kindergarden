@@ -52,7 +52,9 @@ export const CharacterSchema = z.object({
   en: BibleSchema.nullable(),
 });
 
-export const KNOWLEDGE = ['witnessed', 'heard', 'inferred', 'partial', 'secret'] as const;
+/** How much a character knows about the event they carry a memory of. Not exported: the
+ * values reach the rest of the site through `Knowledge` and the i18n `knowledge` labels. */
+const KNOWLEDGE = ['witnessed', 'heard', 'inferred', 'partial', 'secret'] as const;
 
 export const StoryMemorySchema = z.object({
   character: z.string(),

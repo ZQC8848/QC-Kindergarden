@@ -21,7 +21,36 @@ import {
   parseBible,
   parseStoryContent,
   resolveSlug,
+  stripLeadingH1,
 } from './parse.mjs';
+
+describe('stripLeadingH1', () => {
+  it('drops the title line and the blank lines before it', () => {
+    assert.equal(stripLeadingH1('\n\n# 标题\n\n正文。'), '\n正文。');
+  });
+
+  it('drops it on a CRLF checkout too', () => {
+    // The regex this replaced failed here: in a JS regex `.` does not match `\r`, so on
+    // Windows every story page rendered its title twice — once from frontmatter, once
+    // from the body. This test is the reason the function is line-based.
+    assert.equal(stripLeadingH1('\r\n# 标题\r\n\r\n正文。'), '\n正文。');
+  });
+
+  it('normalises line endings so both checkouts build the same HTML', () => {
+    assert.equal(stripLeadingH1('# T\r\na\r\nb'), 'a\nb');
+  });
+
+  it('leaves a body that starts with prose or a deeper heading alone', () => {
+    assert.equal(stripLeadingH1('正文。\n\n# 后面的标题'), '正文。\n\n# 后面的标题');
+    assert.equal(stripLeadingH1('## 小标题\n\n正文。'), '## 小标题\n\n正文。');
+    assert.equal(stripLeadingH1('#不是标题\n\n正文。'), '#不是标题\n\n正文。');
+  });
+
+  it('survives an empty body', () => {
+    assert.equal(stripLeadingH1(''), '');
+    assert.equal(stripLeadingH1('\n\n'), '\n\n');
+  });
+});
 
 describe('resolveSlug', () => {
   it('accepts a slug, a Chinese name and an English name', () => {

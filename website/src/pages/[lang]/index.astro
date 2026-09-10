@@ -4,7 +4,7 @@ import GroupPhoto from '../../components/GroupPhoto.astro';
 import CharacterCard from '../../components/CharacterCard.astro';
 import StoryList from '../../components/StoryList.astro';
 import Places from '../../components/Places.astro';
-import { characters } from '../../lib/content';
+import { characters, groupPhoto } from '../../lib/content';
 import { t, langs, otherLang, type Lang } from '../../i18n';
 
 export function getStaticPaths() {
@@ -14,7 +14,14 @@ const lang = Astro.params.lang as Lang;
 const s = t(lang);
 ---
 
-<Base lang={lang} title={s.siteName} description={s.intro} altPath={`/${otherLang(lang)}/`}>
+<Base
+  lang={lang}
+  title={s.siteName}
+  description={s.intro}
+  altPath={`/${otherLang(lang)}/`}
+  image={groupPhoto}
+  imageAlt={s.hero.alt}
+>
   <section class="hero wrap">
     <div class="hero-copy">
       <h1>{s.tagline}</h1>

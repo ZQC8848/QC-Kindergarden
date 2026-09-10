@@ -8,10 +8,11 @@
     "build": "npm run sync && astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "verify": "npm run sync && npm run format:check && npm run check && npm run build",
+    "verify": "npm run sync && npm run format:check && npm run check && npm run build && npm run check:build",
     "format": "prettier --write \"src/**/*.{astro,ts,css,mjs}\" \"scripts/*.mjs\" \"*.{json,mjs}\"",
     "format:check": "prettier --check \"src/**/*.{astro,ts,css,mjs}\" \"scripts/*.mjs\" \"*.{json,mjs}\"",
-    "test": "node --test"
+    "test": "node --test",
+    "check:build": "node scripts/check-build.mjs"
   },
   "dependencies": {
     "astro": "^7.3.2",

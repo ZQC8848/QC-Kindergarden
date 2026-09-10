@@ -8,7 +8,7 @@ Run from anywhere inside the repository:
   python .agents/skills/discord-notify/scripts/notify_discord.py --force <slug>
   python .agents/skills/discord-notify/scripts/notify_discord.py --init      # record current content, post nothing
 
-What counts as new is decided against state.json next to this skill. See SKILL.md for the rules.
+What counts as new is decided against .agents/state/discord-notify.json. See SKILL.md for the rules.
 Webhook URL: DISCORD_WEBHOOK_URL in the environment, the repository-root .env, or ResearchAssets/config/notify.env (private submodule).
 """
 import argparse
@@ -34,7 +34,9 @@ ROOT = SKILL_DIR.parents[2]
 STORIES = ROOT / 'stories'
 ASSETS = STORIES / 'assets'
 CONFIG = ROOT / 'website' / 'src' / 'data' / 'characters.config.mjs'
-STATE = SKILL_DIR / 'state.json'
+# Runtime state lives outside the skill directory: the skill folder is the definition and
+# should read the same on every machine, while this file changes on every announcement.
+STATE = ROOT / '.agents' / 'state' / 'discord-notify.json'
 DEFAULT_SITE = 'https://qc-kindergarten.vercel.app'
 
 COLOR = {'memory': 0x2C4A88, 'extra': 0xD39A34}
@@ -167,6 +169,13 @@ def load_state():
 
 
 def save_state(state):
+    # Drop entries for illustration files that no longer exist. Superseded versions get
+    # deleted once a panel is final (stories/README.md), and without this the state file
+    # keeps growing a list of names nothing can match again.
+    state['illustrations'] = {
+        key: when for key, when in state['illustrations'].items() if (ASSETS / f'{key}.png').exists()
+    }
+    STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 

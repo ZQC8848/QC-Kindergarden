@@ -54,7 +54,7 @@
 ```
 character reference/<slug>/
   性格设定.md          中文（现有）
-  性格设定.en.md       英文，同样的标题结构（待翻译）
+  性格设定.en.md       英文，同样的标题结构（2026-09-09 起 12 份齐全）
   <slug>.png           立绘
   turnaround/ expressions/
 website/

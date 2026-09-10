@@ -55,6 +55,8 @@ const zh = {
   appearsIn: '出场的故事',
   noStories: '还没有出场的故事。',
   switchLang: 'English',
+  notFound: '这一页走丢了',
+  notFoundBody: '幼儿园里没有这个房间。回首页看看别的。',
 } as const;
 
 /**
@@ -123,6 +125,8 @@ const en: Dict = {
   appearsIn: 'Appears in',
   noStories: 'No stories yet.',
   switchLang: '中文',
+  notFound: 'This page wandered off',
+  notFoundBody: 'There is no such room in the kindergarten. Try the home page instead.',
 };
 
 const dict = { zh, en };

@@ -9,6 +9,8 @@
 - `Scene Reference/` — 场景参考图，故事的 `location` 与网站地点页都引用它。
 - `website/` — Astro 双语站，构建时从上面三个目录同步内容。跑法见 `website/README.md`。
 - `tools/` — 两个 agent 共用的脚本：`audit_en.py`（中英覆盖审计）、`skill_stubs.py`（skill 桩同步）。
+- `.github/workflows/ci.yml` — push 与 PR 上跑单元测试、`npm run verify`、英文覆盖审计、skill 桩校验。注意 CI 构建的 dist 只用于校验，上线的是本地 prebuilt 的那份（见 `website/README.md`）。
+- `.agents/state/` — skill 的运行时状态（如 discord 通知记录）。skill 目录只放定义，会变的东西放这里。
 - `docs/` — 项目检测与整改记录。
 - `ResearchAssets/` — **私有 submodule**，研究 / 论文 / 申请材料。主仓库公开，这个目录不公开。改动流程见 `ResearchAssets/AGENTS.md`。
 
@@ -16,7 +18,7 @@
 
 `.agents/skills/` 是唯一实现，五个 skill 都在这里。`.claude/skills/` 下是同名的三行转发桩，只重复 frontmatter，正文指回正本。Codex 直接读正本，Claude Code 读到桩后再打开正本，两边看到的是同一份指令。
 
-改完 skill 跑 `python tools/skill_stubs.py --write` 更新桩，`python tools/skill_stubs.py` 校验（描述不一致会退出码 1）。**不要**在 `.claude/skills/` 下写内容。
+改完 skill 跑 `python tools/skill_stubs.py --write` 更新桩，`python tools/skill_stubs.py` 校验（描述不一致会退出码 1）。**不要**在 `.claude/skills/` 下写内容，也不要在 skill 目录里放会变的状态文件。
 
 - `fieldnotes` — 项目知识记录。
 - `story-illustrator` — 故事插画提案、可复用资产准备与生成工作流。

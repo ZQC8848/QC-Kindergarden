@@ -34,7 +34,13 @@ memories:                       # 仅 memory 使用，key 推荐写稳定 slug
 - 可选字段 `teaser: 一句不剧透的话`，Discord 通知会优先用它；没有就取正文第一句。
 - 英文版放在同名的 `<故事文件名>.en.md`：frontmatter 只写 `title`、`framing`（番外）和 `memories`（每个角色的 `title` / `summary` / `impact`），`cast`、`location`、`date`、`type`、`timeline` 沿用中文文件；正文翻译后保留 `<!-- illustration:N|英文说明 -->` 标记。翻译规范见 `.agents/skills/translate-en/SKILL.md`。
 - `cast` 表示与故事有关、可用于筛选的角色；`memories` 表示真正拥有该段记忆的角色，两者不必相同。
-- 故事产生的长期性格变化可以回写 bible，但不要把完整事件重复复制过去。旧的重复段落可保留为 `## 事件档案（已迁移）`，网站不会再把它当补充设定显示。
+- 故事产生的长期性格变化可以回写 bible，但不要把完整事件重复复制过去。bible 里改放一个 `## 事件档案` 段，只列指向故事文件的链接。
+
+### `## 事件档案` 这一段的约定
+
+- **它只服务于直接读 markdown 的人和 agent，网站上任何地方都不渲染。** 它既不在 `characters.config.mjs` 的 `descriptionOrder` 里，也不会被 `parse.mjs` 的 `isExtra()` 当成补充设定。角色页上的「记忆」区是另一条路径，由 `stories.json` 生成，跟这一段无关。
+- 因此**英文 bible 不需要写这一段**。`tools/audit_en.py` 里 `canon()` 把它归一成 `事件档案`，中英覆盖检查再显式跳过它——这是中英章节数可以不相等的唯一合法原因。
+- 段落内容只写链接和一句话，长期影响写进上面的常驻段落。完整叙述永远只有故事文件这一份。
 
 ## 配图
 

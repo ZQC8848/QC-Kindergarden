@@ -7,6 +7,7 @@ import {
   bySlug,
   coverOf,
   illustrationOf,
+  leadImageOf,
   nameOf,
   sceneByFile,
   placeName,
@@ -31,6 +32,8 @@ const storyPlaces = st.locations.map((f) => sceneByFile[f]).filter(Boolean);
   title={`${tx.title} · ${s.siteName}`}
   description={tx.excerpt}
   altPath={`/${otherLang(lang)}/stories/${slug}/`}
+  image={leadImageOf(st)}
+  imageAlt={tx.title}
 >
   <article class="story wrap">
     <p class="crumbs">

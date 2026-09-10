@@ -25,6 +25,7 @@ import {
   parseBible,
   parseStoryContent,
   resolveSlug,
+  stripLeadingH1,
 } from './parse.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -40,12 +41,55 @@ fs.mkdirSync(outData, { recursive: true });
 
 marked.setOptions({ gfm: true, breaks: false });
 
+/** Every file this run believes should exist under src/assets, so prune() can spot the rest. */
+const written = new Set();
+
 function copyIfNewer(src, dst) {
   if (!fs.existsSync(src)) return false;
   fs.mkdirSync(path.dirname(dst), { recursive: true });
+  written.add(path.resolve(dst));
   if (fs.existsSync(dst) && fs.statSync(dst).mtimeMs >= fs.statSync(src).mtimeMs) return true;
   fs.copyFileSync(src, dst);
   return true;
+}
+
+/**
+ * Delete generated assets whose source is gone, and any directory left empty.
+ *
+ * Copying without pruning let renamed sources linger: `Kindergarden-Map.png` survived the
+ * Kindergarten rename, and because src/lib/content.ts globs these folders with
+ * `eager: true`, Astro optimised the orphan into three webp variants that shipped in dist.
+ *
+ * Scoped to the folders this script owns (website/.gitignore lists exactly these), so a
+ * hand-added asset elsewhere under src/assets is never touched.
+ */
+const GENERATED = ['characters', 'stories', 'scenes', 'group-photo.png'];
+
+function prune() {
+  let removed = 0;
+  const visit = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(full);
+        if (fs.readdirSync(full).length === 0) fs.rmdirSync(full);
+      } else if (!written.has(path.resolve(full))) {
+        fs.unlinkSync(full);
+        console.log(`[sync] removed orphan ${path.relative(site, full).replace(/\\/g, '/')}`);
+        removed++;
+      }
+    }
+  };
+  for (const name of GENERATED) {
+    const target = path.join(outAssets, name);
+    if (!fs.existsSync(target)) continue;
+    if (fs.statSync(target).isDirectory()) visit(target);
+    else if (!written.has(path.resolve(target))) {
+      fs.unlinkSync(target);
+      removed++;
+    }
+  }
+  return removed;
 }
 
 /** fs wrapper around latestVersionOf. */
@@ -124,8 +168,8 @@ if (fs.existsSync(STORIES)) {
     const stem = f.replace(/\.md$/, '');
     const raw = fs.readFileSync(path.join(STORIES, f), 'utf8');
     const { data, content } = matter(raw);
-    // strip the first H1 (title is rendered from frontmatter)
-    const body = content.replace(/^\s*# .+\n/, '');
+    // the title is rendered from frontmatter, so the body must not repeat it
+    const body = stripLeadingH1(content);
     const cast = (data.cast ?? []).map(resolveSlug).filter(Boolean);
     const memories = memoryEntries(data.memories).map(([character, m]) => ({ character, ...m }));
     const storyAssets = path.join(STORIES, 'assets');
@@ -143,7 +187,7 @@ if (fs.existsSync(STORIES)) {
     let en = null;
     if (fs.existsSync(enPath)) {
       const twin = matter(fs.readFileSync(enPath, 'utf8'));
-      const enBody = twin.content.replace(/^\s*# .+\n/, '');
+      const enBody = stripLeadingH1(twin.content);
       const enMemories = Object.fromEntries(
         memoryEntries(twin.data.memories).map(([slug, m]) => [
           slug,
@@ -211,4 +255,6 @@ copyIfNewer(
   path.join(site, 'group-photo', 'group-photo-final-v1.png'),
   path.join(outAssets, 'group-photo.png'),
 );
-console.log('[sync] done');
+
+const removed = prune();
+console.log(`[sync] done${removed ? ` (pruned ${removed} orphan${removed > 1 ? 's' : ''})` : ''}`);

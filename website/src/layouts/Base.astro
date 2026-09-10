@@ -1,4 +1,6 @@
 ---
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
 import '../styles/global.css';
 import { t, otherLang, type Lang } from '../i18n';
 
@@ -10,14 +12,30 @@ interface Props {
   accentInk?: string;
   /** path of this page in the other language, e.g. /en/characters/haide/ */
   altPath?: string;
+  /** the page's lead image, used as the share card; falls back to the group photo */
+  image?: ImageMetadata;
+  /** alt text for that image, also the card's image description */
+  imageAlt?: string;
 }
 
-const { lang, title, description, accent, accentInk, altPath } = Astro.props;
+const { lang, title, description, accent, accentInk, altPath, image, imageAlt } = Astro.props;
 const s = t(lang);
 const other = otherLang(lang);
 const switchHref = altPath ?? `/${other}/`;
 const home = `/${lang}/`;
 const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};` : undefined;
+
+// Share cards. The discord-notify skill posts these links into Discord, and without this
+// block they unfurled as bare URLs — no title, no image, no summary.
+// Absolute URLs are required: scrapers do not resolve relative paths.
+const abs = (p: string) => new URL(p, Astro.site).href;
+const canonical = abs(Astro.url.pathname);
+// Width is capped at the source's own so nothing is upscaled; height is derived from the
+// source ratio rather than read back off the result, which keeps the two og:image
+// dimensions consistent with each other whatever the image service returns.
+const shareWidth = image ? Math.min(1200, image.width) : 0;
+const shareHeight = image ? Math.round((shareWidth * image.height) / image.width) : 0;
+const shareImage = image ? await getImage({ src: image, width: shareWidth, format: 'webp' }) : null;
 ---
 
 <html lang={lang === 'zh' ? 'zh-CN' : 'en'} style={style}>
@@ -31,7 +49,25 @@ const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};`
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="alternate" hreflang={other} href={switchHref} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang={other} href={abs(switchHref)} />
+    <link rel="alternate" hreflang="x-default" href={abs(`/zh${Astro.url.pathname.slice(3)}`)} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={s.siteName} />
+    <meta property="og:locale" content={lang === 'zh' ? 'zh_CN' : 'en_US'} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta name="twitter:card" content={shareImage ? 'summary_large_image' : 'summary'} />
+    {shareImage && (
+      <>
+        <meta property="og:image" content={abs(shareImage.src)} />
+        <meta property="og:image:width" content={String(shareWidth)} />
+        <meta property="og:image:height" content={String(shareHeight)} />
+        <meta property="og:image:alt" content={imageAlt ?? title} />
+      </>
+    )}
   </head>
   <body>
     <header class="nav">

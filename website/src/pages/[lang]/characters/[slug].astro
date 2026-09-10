@@ -45,6 +45,8 @@ const sectionId = (i: number) => `s-${i}`;
   accent={c.accent}
   accentInk={ink}
   altPath={`/${otherLang(lang)}/characters/${slug}/`}
+  image={poster}
+  imageAlt={name}
 >
   <article class="char">
     <header class="top wrap">
@@ -385,8 +387,6 @@ const sectionId = (i: number) => `s-${i}`;
   .faces {
     display: flex;
     min-width: 44px;
-  }
-  .faces {
     --avatar-overlap: -10px;
   }
   @media (max-width: 860px) {

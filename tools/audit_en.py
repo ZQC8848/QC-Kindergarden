@@ -126,6 +126,9 @@ def main():
         zh_sections = [canon(h, aliases) for h in headings(zh.read_text(encoding='utf-8'))]
         en_sections = [canon(h, aliases) for h in headings(en.read_text(encoding='utf-8'))]
         for sec in zh_sections:
+            # 事件档案 is a markdown-only pointer block: it renders nowhere on the site, so
+            # the English bibles do not carry it. This one line is why zh and en section
+            # counts are allowed to differ. Convention documented in stories/README.md.
             if sec == '事件档案':
                 continue
             if zh_sections.count(sec) > en_sections.count(sec):

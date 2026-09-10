@@ -68,6 +68,25 @@ export function latestIllustrationsOf(files, stem) {
   return [...latestByPanel.values()].sort((a, b) => a.panel - b.panel);
 }
 
+/**
+ * Drop the story's own `# 标题` line; the page renders the title from frontmatter instead.
+ *
+ * Deliberately line-based rather than one regex. The regex this replaced was
+ * `/^\s*# .+\n/`, and in a JS regex `.` excludes every line terminator — `\r` included —
+ * so on a CRLF checkout `.+` stopped short of `\r`, the whole pattern failed, and all
+ * twelve story pages shipped their title twice. See parse.test.mjs.
+ *
+ * Joining with `\n` also normalises the body's line endings, so the generated JSON — and
+ * therefore the built HTML — is the same whether the checkout is CRLF or LF.
+ */
+export function stripLeadingH1(content) {
+  const lines = content.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === '') i++;
+  if (i < lines.length && /^#\s+\S/.test(lines[i])) lines.splice(0, i + 1);
+  return lines.join('\n');
+}
+
 /** Story body → alternating prose and illustration blocks, split on `<!-- illustration:N|caption -->`. */
 export function parseStoryContent(body) {
   const blocks = [];

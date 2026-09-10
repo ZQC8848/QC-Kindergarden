@@ -31,7 +31,7 @@ jobs:
         working-directory: website
         run: npm test
 
-      # sync → prettier check → astro check → build
+      # sync → prettier check → astro check → build → check-build.mjs (asserts on dist itself)
       - name: Verify
         working-directory: website
         run: npm run verify

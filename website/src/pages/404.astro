@@ -1,0 +1,87 @@
+---
+// One 404 for the whole site. It sits outside /[lang]/, so the visitor's language is
+// unknown by construction — show both rather than guess, and offer both home pages.
+import Base from '../layouts/Base.astro';
+import { t } from '../i18n';
+
+const zh = t('zh');
+const en = t('en');
+---
+
+<Base lang="zh" title={`404 · ${zh.siteName}`} description={zh.notFoundBody}>
+  <section class="notfound wrap">
+    <p class="code">404</p>
+    <div class="pair">
+      <div lang="zh-CN">
+        <h1>{zh.notFound}</h1>
+        <p>{zh.notFoundBody}</p>
+        <a class="go" href="/zh/">
+          {zh.backHome}
+        </a>
+      </div>
+      <div lang="en">
+        <h2>{en.notFound}</h2>
+        <p>{en.notFoundBody}</p>
+        <a class="go" href="/en/">
+          {en.backHome}
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .notfound {
+    padding: clamp(3rem, 12vh, 7rem) 0;
+    text-align: center;
+  }
+  .code {
+    font-size: clamp(4rem, 18vw, 9rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent);
+    margin: 0;
+  }
+  .pair {
+    display: grid;
+    gap: 2.5rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  .pair h1,
+  .pair h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .pair p {
+    color: var(--ink-2);
+    max-width: 40ch;
+    margin: 0 auto;
+  }
+  .go {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 800;
+    padding: 0.45em 1.4em;
+    border-radius: 999px;
+    border: 2px solid var(--line-strong);
+  }
+  .go:hover {
+    border-color: var(--ink);
+    color: var(--accent-ink);
+  }
+  @media (min-width: 700px) {
+    .pair {
+      /* .wrap is the full page width; without a cap the two halves drift to opposite
+         edges of a wide screen and stop reading as one message. */
+      grid-template-columns: 1fr 1fr;
+      max-width: 46rem;
+      margin-inline: auto;
+      gap: 3rem;
+      text-align: left;
+    }
+    .pair p {
+      margin: 0;
+    }
+  }
+</style>

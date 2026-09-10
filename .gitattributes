@@ -1,0 +1,22 @@
+# Line endings are normalised to LF in the repository AND in the working tree.
+#
+# Why the working tree too (`-text` would only do the repository): the site is deployed
+# with `vercel build --prebuilt`, i.e. the dist that goes live is built on whichever
+# machine runs the deploy, while CI builds on Linux. When Windows checked these files
+# out as CRLF the two builds diverged, and a parser bug that CI could never see shipped
+# the story title twice on every story page. Same bytes everywhere, same dist everywhere.
+* text=auto eol=lf
+
+# Binary assets: never touch, never diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.mp3 binary
+*.wav binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
