@@ -9,6 +9,7 @@
 - `Scene Reference/` — 场景参考图，故事的 `location` 与网站地点页都引用它。
 - `website/` — Astro 双语站，构建时从上面三个目录同步内容。跑法见 `website/README.md`。
 - `tools/` — 两个 agent 共用的脚本：`audit_en.py`（中英覆盖审计）、`skill_stubs.py`（skill 桩同步）、`taste_scan.py`（算出 `qc-taste` 这次该读哪些新增的对话记录）。
+- `tools/story_pipeline/` — 故事生成流水线：四模型并行出大纲、盲评裁决、候选库。跑法见其 `README.md`，设计见 `docs/2026-09-09-story-pipeline-design.md`。候选数据在私有 submodule 的 `story-candidates/`。
 - `.github/workflows/ci.yml` — push 与 PR 上跑单元测试、`npm run verify`、英文覆盖审计、skill 桩校验。注意 CI 构建的 dist 只用于校验，上线的是本地 prebuilt 的那份（见 `website/README.md`）。
 - `.agents/state/` — skill 的运行时状态（如 discord 通知记录）。skill 目录只放定义，会变的东西放这里。
 - `docs/` — 项目检测与整改记录。

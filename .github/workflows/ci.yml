@@ -43,3 +43,7 @@ jobs:
 
       - name: Skill stubs in sync
         run: python3 tools/skill_stubs.py
+
+      # Pure logic only: no model calls, no network, no ResearchAssets checkout needed.
+      - name: Story pipeline tests
+        run: python3 tools/story_pipeline/test_pipeline.py
