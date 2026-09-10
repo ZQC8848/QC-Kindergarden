@@ -15,6 +15,10 @@ archive's path, sha256 and line count at the time it was mined. A file is in sco
   * its sha256 differs from the record  -> read from the recorded line count onward
     (exports grow: a session archived mid-run is re-exported later with more turns).
 
+Two streams are scanned. ai-chat-history is where QC's seeds and instructions live;
+story-candidates is where the review pipeline's verdicts land, and `rejected` is the
+heaviest evidence type the protocol recognises. Each judged round counts as one record.
+
 Exit code 0 always; this reports, it never decides. Finding nothing in scope is a normal
 outcome and means the update may legitimately stop there.
 
@@ -30,6 +34,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RULES = ROOT / '.agents' / 'skills' / 'qc-taste' / 'references' / 'taste-rules.yaml'
 HISTORY = ROOT / 'ResearchAssets' / 'ai-chat-history'
+CANDIDATES = ROOT / 'ResearchAssets' / 'story-candidates'
+
+
+def digest_round(d: Path):
+    """Fingerprint a whole review round: every candidate file plus round.json.
+
+    Rounds are the second evidence stream, and the one the story pipeline exists to
+    produce. `rejected` is the heaviest evidence type in the protocol, and until this
+    was added the cursor could not see a single one of them: it scanned only
+    ai-chat-history, so six fully tagged rejections read as "nothing new".
+
+    A round re-fingerprints whenever any verdict changes, which is what should bring it
+    back into scope — a round is only worth mining once QC has judged it.
+    """
+    crlf, lf = b'\r\n', b'\n'
+    blob = b''.join(p.read_bytes().replace(crlf, lf) for p in sorted(d.iterdir()) if p.is_file())
+    return hashlib.sha256(blob).hexdigest(), len(list(d.glob('c-*.md')))
 
 
 def digest(path: Path):
@@ -72,11 +93,12 @@ def main():
     seen = consumed()
     scope, unchanged, missing = [], [], []
 
-    for path in sorted(HISTORY.glob('*.md')):
-        if path.name == 'README.md':
-            continue
+    records = [(p, digest) for p in sorted(HISTORY.glob('*.md')) if p.name != 'README.md']
+    records += [(d, digest_round) for d in sorted(CANDIDATES.glob('*-r*')) if d.is_dir()]
+
+    for path, fingerprint in records:
         rel = path.relative_to(ROOT).as_posix()
-        sha, lines = digest(path)
+        sha, lines = fingerprint(path)
         record = seen.get(rel)
         if record is None:
             scope.append({'path': rel, 'reason': 'new', 'from_line': 1, 'to_line': lines})
@@ -109,8 +131,10 @@ def main():
     else:
         print(f'[taste-scan] {len(scope)} record(s) in scope:')
         for item in scope:
-            span = f"lines {item['from_line']}-{item['to_line']}"
-            extra = f" (was {item['was_lines']} lines)" if item['reason'] == 'changed' else ''
+            unit = 'candidates' if '/story-candidates/' in item['path'] else 'lines'
+            span = (f"{item['to_line']} {unit}" if unit == 'candidates'
+                    else f"lines {item['from_line']}-{item['to_line']}")
+            extra = f" (was {item['was_lines']} {unit})" if item['reason'] == 'changed' else ''
             print(f"  {item['reason']:8} {item['path']}  {span}{extra}")
         print(f'\n  {len(unchanged)} record(s) already mined, skipped.')
     if missing:
