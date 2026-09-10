@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import random
 import re
 import sys
 from dataclasses import dataclass
@@ -173,56 +172,6 @@ def load_stories() -> list[dict]:
     return out
 
 
-# --------------------------------------------------------------------------- combos
-
-def assign_combos(characters: list[Character], scenes: list[Scene], stories: list[dict], n: int, seed: int):
-    """Pick n (character group, scene) combos for this round, biased toward coverage.
-
-    All four models receive the *same* combos. Letting each model pick its own would
-    confound the comparison — different casts, different scenes, no like-for-like read
-    on which model wrote the better premise. Identical brief and identical combos are
-    the same requirement.
-
-    Bias, not determinism: characters and scenes that have appeared least are more
-    likely to be drawn, but the draw stays random so rounds do not become a rota.
-    """
-    rng = random.Random(seed)
-    char_uses = {c.slug: 0 for c in characters}
-    scene_uses = {s.file: 0 for s in scenes}
-    for st in stories:
-        for slug in re.findall(r'[\w一-鿿]+', st['cast']):
-            if slug in char_uses:
-                char_uses[slug] += 1
-        for f in re.findall(r'[A-Za-z-]+', st['location']):
-            if f in scene_uses:
-                scene_uses[f] += 1
-
-    def weighted(pool, uses, key):
-        # Least-used gets the most weight; +1 keeps every option reachable.
-        weights = [1.0 / (uses[key(x)] + 1) for x in pool]
-        return rng.choices(pool, weights=weights, k=1)[0]
-
-    combos = []
-    used_scenes: set[str] = set()
-    for _ in range(n):
-        group: list[Character] = []
-        pool = [c for c in characters]
-        size = rng.choice([2, 3, 3, 4])
-        while len(group) < size and pool:
-            pick = weighted(pool, char_uses, lambda c: c.slug)
-            group.append(pick)
-            pool.remove(pick)
-            char_uses[pick.slug] += 1
-        scene_pool = [s for s in scenes if s.file not in used_scenes] or scenes
-        scene = weighted(scene_pool, scene_uses, lambda s: s.file)
-        used_scenes.add(scene.file)
-        scene_uses[scene.file] += 1
-        combos.append({'cast': [c.slug for c in group], 'names': [c.name for c in group], 'location': scene.file, 'location_zh': scene.zh})
-    return combos
-
-
-# --------------------------------------------------------------------------- render
-
 RULES = """\
 ## 世界与规则
 
@@ -230,48 +179,86 @@ RULES = """\
 - **前提必须是真实幼儿园里不可能发生的事。** 男孩发誓再犯就变成狗、然后真的变成了狗；金色法拉利在凌晨两点收超速罚单；四个女孩被画成飞车党魔女——这是这个项目已经被认可的量级。放开想象，不必回避明显的荒诞。
 - **但荒诞必须跑在人物既有的逻辑上，不能与之相悖。** 没有锚点的荒诞就只是奇观。
 - **日常小事不要提交。** 帽子掉进汤锅、午餐时间办个比赛、大家一起做点心——这类"任何一家托儿所任何一个星期二都可能发生"的前提会被直接否决，无论细节写得多贴合人设。
-- 故事分两类：**记忆事件**真实发生、会影响之后的人物关系与行为；**番外**是特别篇、假想与恶搞，不进入任何角色的记忆。你写的大纲要标明属于哪一类。
+- 故事分两类：**记忆事件**真实发生、会影响之后的人物关系与行为；**番外**是特别篇、假想与恶搞，不进入任何角色的记忆。你要标明属于哪一类。
 - 记忆是主观的：同一件事，每个角色记住的版本不同，有人只知道一部分，有人知情但保密。不要让角色仅仅因为读者知道就知道某件事。
-- 长度：这一步只要**大纲**，不要正文。
+- **写完整的短篇故事，不是大纲。** 长度不限，写到该结束的地方为止。要有对话、有动作、有场面。
+- 讲法克制：短对话、具体动作、延迟反应、留一处让读者自己想明白。**不要在笑点之后解释笑点**，也不要用旁白讲解某人的性格。
+- 结尾落在一个改不回去的东西上：一个道具、一个习惯、一句早先说过的话，含义变了。不要用总结或道理收尾。
 """
 
-TASK = """\
-## 你的任务
+# The four premise templates, reverse-engineered from the six stories QC has accepted.
+# Round r01 asked "what happens when these three people are in this room?" — a slice-of-life
+# question, which got slice-of-life answers and a 6/6 rejection. Not one accepted story began
+# from a room: they began from a consequence, a contradiction, an exaggerated fact, or a genre.
+# The location is an output of the premise now, never an input to it.
+SLOTS = {
+    'consequence': {
+        'zh': '后果位',
+        'brief': """\
+拿下面**已有故事**中的一篇，写它在之后引发的事。
 
-针对下面指定的（人物组 + 场景）组合，各写 **1 条**故事大纲。
+不是续写，是**后果**：那件事留下的东西——一个改变了的习惯、一段没消化的记忆、一个还没还的人情、一个被埋起来的秘密——在几周或几个月后长成了一件新的、更麻烦的事。
 
-每条大纲输出为一个 JSON 对象，字段如下：
+《七天追咬事件》就是这么来的：Haide 变成狗之后适应了四条腿，于是幼儿园恢复了熟悉的混乱。""",
+    },
+    'contradiction': {
+        'zh': '矛盾位',
+        'brief': """\
+拿**某一个角色**的矛盾，写它不再是笑点、变成真麻烦的那一刻。
 
-- `hook`：一句话前提。
-- `turn`：一句话转折。
-- `kind`：`memory` 或 `extra`。
-- `cast`：实际出场的角色 slug 列表。
-- `location`：场景文件名。
-- `differs_from`：这条与上面哪一篇已有故事最接近，区别在哪。**必填**，用于去重。
-- `new_elements`：**只统计新的客串角色或新的场景**，两者都没有就填 `"none"`。
-  新的情节、道具、笑点、以及关于现有角色的新事实，都**不算**新元素——那些是正常创作，不用在这里报备。
-  确实需要一个不在上面 12 人里的人物，或一个不在场景清单里的地点时，才写成列表，每项一行说明。
+每个角色的矛盾都写在上面的设定里。平时它是个有趣的反差；你要写的是它失控、或者被人当真、或者代价终于到账的那一次。
 
-只输出一个 JSON 数组，不要输出任何其他文字。
-"""
+《Haide 变成狗的那一天》就是这么来的：一句"再犯就变成狗"的誓言本来是玩笑，然后当真了。""",
+    },
+    'escalation': {
+        'zh': '放大位',
+        'brief': """\
+拿一条**已经确立的具体事实**——某个道具、某个习惯、某条额外设定——把它推到一个不可能的量级。
 
-EXPANSION_TASK = """\
-## 你的任务
+不要发明新事实，要放大旧事实。QC 的金色法拉利本来就在设定里，《午夜的金色法拉利》把它推到凌晨两点的超速罚单和一个没人敢承认的车速。艾莎的记仇本也在设定里——它可以被推到什么程度？""",
+    },
+    'transposition': {
+        'zh': '移植位',
+        'brief': """\
+把全员或其中几个人搬进一个**不属于幼儿园的类型**：飞车党、黑帮、法庭、恐怖片、体育解说、宫斗、赛博朋克、纪录片——越不搭越好。
 
-针对下面指定的（人物组 + 场景）组合，写 **1 条**故事大纲，要求这个故事**必须引入一个临时客串角色或一个新场景才能成立**——也就是说，光靠现有的 12 个角色和现有场景写不出来。
+保留每个人的身份锚点：主题色、招牌道具、说话方式、核心矛盾。移植的是舞台，不是人，读者要能一眼认出谁是谁。
+
+《幼儿园四大魔女》就是这么来的。这一类通常是**番外**，但如果你能让它成立为记忆事件也可以。""",
+    },
+}
+
+EXPANSION_BRIEF = """\
+写一个**必须引入一个临时客串角色或一个新场景才能成立**的故事——光靠现有的 12 个角色和现有场景写不出来的那种。
 
 先看上面的「可复用的客串角色」清单：如果其中某位就能撑起这个故事，优先用他们，并在 `new_elements` 里写 `reuse: <名字>`。只有在现有客串都不合适时才提出全新的人或地点。
 
-新地点的代价远高于新人物：新地点需要单独绘制场景参考图并生成地点页。所以如果新人物和新地点都能达成同一个效果，选新人物。
+新地点的代价远高于新人物：新地点要单独绘制场景参考图并生成地点页。如果新人物和新地点能达成同一个效果，选新人物。
+"""
 
-字段与常规大纲相同，`new_elements` 必须是列表而非 `"none"`，每项写明是什么、为什么非它不可。
+OUTPUT_SPEC = """\
+## 输出格式
 
-只输出一个 JSON 对象组成的数组（长度 1），不要输出任何其他文字。
+输出一个 JSON 对象，字段如下：
+
+- `title`：故事标题。
+- `premise_line`：一行，说明你按本次的位子做了什么——接了哪篇的什么残留 / 用了谁的哪条矛盾 / 放大了哪条既有事实 / 移植进了什么类型。
+- `kind`：`memory` 或 `extra`。
+- `cast`：出场角色的 slug 列表。
+- `location`：场景文件名，从上面的场景清单里挑最合适的一个。**地点由故事决定，不要为了用某个地点而编故事。**
+- `nearest`：下面已有故事里与这篇**同类**的那一篇（slug）。
+- `stands_beside`：这篇凭什么配站在那一篇旁边——它带来了那一篇没有的什么。**要求的是"配得上"，不是"比它小"：不要用更平淡、更安静、更少人物来制造区别。**
+- `residue`：这个故事之后留下的、改不回去的那个东西。
+- `new_elements`：**只统计新的客串角色或新的场景**，两者都没有就填 `"none"`。新的情节、道具、笑点、以及关于现有角色的新事实都**不算**——那些是正常创作。
+- `story`：完整的短篇故事正文，markdown。长度不限。
+
+只输出这一个 JSON 对象，不要输出任何其他文字。
 """
 
 
-def render(characters, scenes, guests, stories, combos, *, taste: bool, expansion: bool) -> str:
-    out: list[str] = ['# QC Kindergarten 故事大纲任务', '', RULES, '## 角色', '']
+def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> str:
+    """One brief. `slot` is a key of SLOTS, or 'expansion'."""
+    out: list[str] = ['# QC Kindergarten 故事写作任务', '', RULES, '## 角色', '']
 
     for c in characters:
         out.append(f'### {c.name}（{c.mbti}）· slug `{c.slug}`')
@@ -280,7 +267,7 @@ def render(characters, scenes, guests, stories, combos, *, taste: bool, expansio
         for x in c.contradictions:
             out.append(f'- 矛盾：{x}')
         if c.phrases:
-            out.append('- 口头禅：' + '　'.join(f'“{p}”' for p in c.phrases))
+            out.append('- 口头禅：' + '　'.join(f'“{ph}”' for ph in c.phrases))
         if c.prop:
             out.append(f'- 道具：{c.prop}')
         for r in c.relations:
@@ -293,12 +280,13 @@ def render(characters, scenes, guests, stories, combos, *, taste: bool, expansio
         out.append(f'- **{name}**：{func}')
     out.append('')
 
-    out += ['## 场景', '']
-    for s in scenes:
-        out.append(f'- `{s.file}` — {s.zh} / {s.en}')
+    out += ['## 场景', '', '故事写完之后，从这里挑一个最贴合的填进 `location`。', '']
+    for sc in scenes:
+        out.append(f'- `{sc.file}` — {sc.zh} / {sc.en}')
     out.append('')
 
-    out += ['## 已有故事（不要重复，`differs_from` 要引用其中一篇）', '']
+    out += ['## 已有故事', '',
+            '`nearest` 要从这里挑一篇同类的。不要重复它们，但也不要靠"写得更小"来制造区别。', '']
     for st in stories:
         out.append(f"- `{st['slug']}`（{st['kind']}）**{st['title']}** — {st['first']}")
     out.append('')
@@ -308,29 +296,30 @@ def render(characters, scenes, guests, stories, combos, *, taste: bool, expansio
                 '以下是这个项目作者的创作偏好，来自对其历史决策的提炼。它描述作者会选什么，不是质量标准。', '',
                 TASTE.read_text(encoding='utf-8').strip(), '']
 
-    out.append(EXPANSION_TASK if expansion else TASK)
-    out += ['## 本轮指定的组合', '']
-    for i, combo in enumerate(combos, 1):
-        out.append(f"{i}. 人物：{'、'.join(combo['names'])}　场景：`{combo['location']}`（{combo['location_zh']}）")
-    out.append('')
+    if slot == 'expansion':
+        out += ['## 你的任务：扩展位', '', EXPANSION_BRIEF]
+    else:
+        spec = SLOTS[slot]
+        out += [f"## 你的任务：{spec['zh']}", '', spec['brief'], '']
+
+    out.append(OUTPUT_SPEC)
     return '\n'.join(out)
 
 
-def build(*, taste: bool = True, expansion: bool = False, combos=None, n: int | None = None, seed: int = 0):
-    """Returns (brief text, combos). Same seed + same sources = same brief.
+def build(*, taste: bool = True, slot: str = 'contradiction') -> str:
+    """The brief for one slot. Deterministic: same sources + same slot = same bytes.
 
-    The expansion slot defaults to one combo: it asks for a single outline, so handing it
-    three would tell the model to write one story about three different casts.
+    No seed and no combo assignment any more. Round r01 handed every model a
+    (cast, room) pair and got twelve slice-of-life premises for it; the slot now supplies
+    a *shape* — a consequence, a contradiction, an exaggeration, a genre — and the model
+    chooses who and where. Cast rotation follows from the shapes rather than being imposed
+    ahead of them, which also removes the coverage weighting that kept steering rounds
+    toward the rooms nothing good had ever happened in.
     """
-    if n is None:
-        n = 1 if expansion else 3
+    if slot != 'expansion' and slot not in SLOTS:
+        raise ValueError(f'unknown slot {slot!r}; expected expansion or one of {", ".join(SLOTS)}')
     characters = [parse_character(slug, folder) for slug, folder in load_roster()]
-    scenes = load_scenes()
-    guests = load_guests()
-    stories = load_stories()
-    if combos is None:
-        combos = assign_combos(characters, scenes, stories, n, seed)
-    return render(characters, scenes, guests, stories, combos, taste=taste, expansion=expansion), combos
+    return render(characters, load_scenes(), load_guests(), load_stories(), taste=taste, slot=slot)
 
 
 def sha256(text: str) -> str:
@@ -339,22 +328,23 @@ def sha256(text: str) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument('--slot', default='contradiction',
+                    help='consequence | contradiction | escalation | transposition | expansion')
     ap.add_argument('--no-taste', action='store_true', help='ablation arm: omit the taste profile')
-    ap.add_argument('--expansion', action='store_true', help='the expansion slot prompt')
-    ap.add_argument('--combos', action='store_true', help='print only the assigned combos')
-    ap.add_argument('--seed', type=int, default=0)
-    ap.add_argument('-n', type=int, default=None)
+    ap.add_argument('--slots', action='store_true', help='list the slots and exit')
     args = ap.parse_args()
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
 
-    text, combos = build(taste=not args.no_taste, expansion=args.expansion, n=args.n, seed=args.seed)
-    if args.combos:
-        for i, c in enumerate(combos, 1):
-            print(f"{i}. {'、'.join(c['names'])} @ {c['location']}")
+    if args.slots:
+        for name, spec in SLOTS.items():
+            print(f"{name:15} {spec['zh']}  {spec['brief'].splitlines()[0]}")
+        print(f"{'expansion':15} 扩展位  {EXPANSION_BRIEF.splitlines()[0]}")
         return 0
+
+    text = build(taste=not args.no_taste, slot=args.slot)
     print(text)
-    print(f'\n<!-- {len(text)} chars, sha256 {sha256(text)[:12]} -->', file=sys.stderr)
+    print(f'\n<!-- slot={args.slot} {len(text)} chars, sha256 {sha256(text)[:12]} -->', file=sys.stderr)
     return 0
 
 

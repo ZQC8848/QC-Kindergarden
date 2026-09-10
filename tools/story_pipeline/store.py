@@ -50,18 +50,27 @@ MAX_REVISITS = 3
 
 @dataclass
 class Candidate:
+    """One generated story. Candidates carry full prose now, not an outline.
+
+    Round r01 asked for one-line hooks and got premises to match: a container that holds
+    one sentence rewards a premise that fits in one sentence. The story body lives in the
+    markdown, everything sortable lives in the frontmatter.
+    """
     id: str
     round: str
-    slot: str                      # baseline | expansion | seed
+    slot: str                      # consequence | contradiction | escalation | transposition | expansion
     model: str                     # never shown at review time
     taste_context: str             # on | off
-    hook: str
-    turn: str
-    kind: str                      # memory | extra
+    title: str = ''
+    premise_line: str = ''         # what the model did with its slot
+    kind: str = 'memory'           # memory | extra
     cast: list = field(default_factory=list)
     location: str = ''
-    differs_from: str = ''
+    nearest: str = ''              # the existing story this one is closest in kind to
+    stands_beside: str = ''        # why it earns its place next to that one
+    residue: str = ''              # what this story leaves permanently changed
     new_elements: object = 'none'
+    story: str = ''                # the prose itself
     verdict: str = 'pending'
     reason: str | None = None
     notes: str | None = None
@@ -73,6 +82,10 @@ class Candidate:
     def path(self) -> Path:
         return CANDIDATES / self.round / f'{self.id}.md'
 
+    def words(self) -> int:
+        """Rough length. CJK has no spaces, so count characters and ignore markup."""
+        return len(re.sub(r'\s+', '', self.story))
+
 
 def new_id() -> str:
     """Short random id. Random rather than sequential so nothing about the ordering of a
@@ -82,8 +95,8 @@ def new_id() -> str:
 
 # --------------------------------------------------------------------------- io
 
-_SCALAR = ('id', 'round', 'slot', 'model', 'taste_context', 'kind', 'location',
-           'differs_from', 'verdict', 'reason', 'notes', 'decided_at')
+_SCALAR = ('id', 'round', 'slot', 'model', 'taste_context', 'title', 'kind', 'location',
+           'nearest', 'verdict', 'reason', 'notes', 'decided_at')
 
 
 def _yaml_scalar(v) -> str:
@@ -107,11 +120,13 @@ def write(c: Candidate) -> Path:
     lines.append('new_elements: ' + json.dumps(c.new_elements, ensure_ascii=False))
     lines.append(f'revisit_count: {c.revisit_count}')
     lines.append(f'parse_failed: {"true" if c.parse_failed else "false"}')
-    lines += ['---', '', f'**Hook**　{c.hook}', '', f'**Turn**　{c.turn}', '']
-    if c.differs_from:
-        lines += [f'**与已有故事的区别**　{c.differs_from}', '']
-    if c.raw:
-        lines += ['<details><summary>模型原始输出</summary>', '', '```', c.raw.strip(), '```', '', '</details>', '']
+    lines += ['---', '']
+    for label, value in (('Premise', c.premise_line), ('Stands beside', c.stands_beside), ('Residue', c.residue)):
+        if value:
+            lines += [f'**{label}**　{value}', '']
+    lines += ['---', '', c.story.strip(), '']
+    if c.parse_failed and c.raw:
+        lines += ['<details><summary>无法解析的模型原始输出</summary>', '', '```', c.raw.strip()[:20000], '```', '', '</details>', '']
     p.write_text('\n'.join(lines), encoding='utf-8', newline='\n')
     return p
 
@@ -142,15 +157,19 @@ def read(path: Path) -> Candidate:
             data[k] = v
     body = md[fm.end():]
     data.setdefault('cast', [])
-    data['hook'] = _field(body, 'Hook')
-    data['turn'] = _field(body, 'Turn')
+    data['premise_line'] = _field(body, 'Premise')
+    data['stands_beside'] = _field(body, 'Stands beside')
+    data['residue'] = _field(body, 'Residue')
+    # The prose is everything after the horizontal rule that closes the metadata block.
+    parts = re.split(r'^---\s*$', body, flags=re.M)
+    data['story'] = parts[-1].split('<details>')[0].strip() if len(parts) > 1 else ''
     data['raw'] = (re.search(r'```\n(.*?)\n```', body, re.S) or [None, ''])[1]
     known = {f for f in Candidate.__dataclass_fields__}
     return Candidate(**{k: v for k, v in data.items() if k in known})
 
 
 def _field(body: str, label: str) -> str:
-    m = re.search(rf'^\*\*{label}\*\*\s*(.+)$', body, re.M)
+    m = re.search(rf'^\*\*{re.escape(label)}\*\*\s*(.+)$', body, re.M)
     return m.group(1).strip() if m else ''
 
 

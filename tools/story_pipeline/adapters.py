@@ -22,8 +22,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-REQUEST_TIMEOUT = 300      # HTTP; the expansion prompt reasons longer and timed out at 180
-CLI_TIMEOUT = 600          # agent CLIs start a whole loop; they are slow
+# Both were set when a call meant "write two sentences" and neither moved when the task
+# became "write a whole short story". Round r02 lost 8 of 17 calls to them: every kimi
+# call hit 300s and every claude call hit 600s, while deepseek finished a 6500-character
+# story inside the same window. The work got an order of magnitude bigger; so do these.
+REQUEST_TIMEOUT = 900      # HTTP
+CLI_TIMEOUT = 1800         # agent CLIs run a whole loop before they write a word
 
 
 def load_env() -> dict:
@@ -79,16 +83,27 @@ def _post_openai_compatible(base_url: str, api_key: str, model: str, brief: str)
 # --------------------------------------------------------------------------- CLI
 
 def _run_cli(argv: list[str], brief: str) -> str:
-    """Run a subscription CLI in a scratch directory.
+    """Run a subscription CLI in a scratch directory, feeding the brief over stdin.
 
-    The scratch directory is the whole point. Claude Code and Codex read AGENTS.md /
-    CLAUDE.md from their working directory, so running either inside the repo would hand
-    it the entire project on top of the brief — while Kimi and DeepSeek only ever see the
-    brief. The four inputs would stop being comparable and nothing would say so.
+    Two things this gets right, both learned the hard way.
+
+    The scratch directory: Claude Code and Codex read AGENTS.md / CLAUDE.md from their
+    working directory, so running either inside the repo would hand it the whole project
+    on top of the brief, while Kimi and DeepSeek only ever see the brief. The four inputs
+    would stop being comparable and nothing would say so.
+
+    stdin rather than argv: Windows caps a command line at 32767 characters and the brief
+    is around 36000. Passed as an argument it would fail outright, or worse, truncate.
     """
+    # subprocess does not apply PATHEXT, so a bare "claude" misses claude.CMD even though
+    # shutil.which finds it. Resolve to the full path before spawning.
+    resolved = shutil.which(argv[0])
+    if not resolved:
+        raise RuntimeError(f'{argv[0]} not on PATH')
     with tempfile.TemporaryDirectory(prefix='qck-brief-') as tmp:
         proc = subprocess.run(
-            argv + [brief],
+            [resolved, *argv[1:]],
+            input=brief,
             cwd=tmp,
             capture_output=True,
             text=True,
@@ -145,42 +160,56 @@ ADAPTERS = {
     # project's key is on .ai. Model ids differ from the CN catalogue too.
     'kimi': _http_adapter('kimi', 'MOONSHOT_API_KEY', 'https://api.moonshot.ai/v1', 'kimi-k3'),
     'deepseek': _http_adapter('deepseek', 'DEEPSEEK_API_KEY', 'https://api.deepseek.com/v1', 'deepseek-chat'),
-    'claude': _cli_adapter('claude', 'claude', ['claude', '-p', '--allowed-tools', '']),
-    'codex': _cli_adapter('codex', 'codex', ['codex', 'exec', '--skip-git-repo-check']),
+    # Both read the prompt from stdin: `claude -p` with no prompt argument, `codex exec -`.
+    'claude': _cli_adapter('claude', 'claude', ['claude', '-p']),
+    # --skip-git-repo-check: the scratch directory is deliberately not a git repo.
+    'codex': _cli_adapter('codex', 'codex', ['codex', 'exec', '--skip-git-repo-check', '-']),
 }
 
 
 # --------------------------------------------------------------------------- parsing
 
 def parse_outlines(text: str) -> list[dict]:
-    """Pull the outline array out of whatever the model actually returned.
+    """Pull the story object(s) out of whatever the model actually returned.
 
     Tolerant on purpose. The HTTP models are pinned to json_object, but the CLIs are
-    agents: they may open with "好的，这是三条大纲" or wrap the JSON in a fence. One
-    formatting wobble must not cost the whole round, so anything unparseable is kept as
-    raw text and flagged rather than dropped.
+    agents: they may open with "好的，这是故事" or wrap the JSON in a fence, and codex
+    prints its own chrome around the answer. One formatting wobble must not cost a call,
+    so anything unparseable is kept as raw text and flagged rather than dropped.
+
+    Candidates are objects now, and objects contain arrays — `cast` is one. An earlier
+    version looked for the outermost `[...]` first and happily parsed `["haide"]` out of
+    the cast field, yielding zero dicts and reporting every story as unparseable. So a
+    parse only counts when it produces at least one dict.
     """
     if not text or not text.strip():
         return []
-    fenced = re.search(r'```(?:json)?\s*(.*?)```', text, re.S)
-    body = fenced.group(1) if fenced else text
 
-    for opener, closer in (('[', ']'), ('{', '}')):
-        start, end = body.find(opener), body.rfind(closer)
-        if start == -1 or end <= start:
-            continue
-        try:
-            data = json.loads(body[start:end + 1])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(data, list):
-            return [d for d in data if isinstance(d, dict)]
-        if isinstance(data, dict):
+    def harvest(value) -> list[dict]:
+        if isinstance(value, dict):
             # json_object mode cannot return a bare array, so a wrapper key is expected.
-            for value in data.values():
-                if isinstance(value, list) and all(isinstance(v, dict) for v in value):
-                    return value
-            return [data]
+            for v in value.values():
+                if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+                    return v
+            return [value]
+        if isinstance(value, list):
+            return [x for x in value if isinstance(x, dict)]
+        return []
+
+    candidates = [text]
+    fenced = re.findall(r'```(?:json)?\s*(.*?)```', text, re.S)
+    candidates = fenced + candidates
+    for body in candidates:
+        for opener, closer in (('{', '}'), ('[', ']')):
+            start, end = body.find(opener), body.rfind(closer)
+            if start == -1 or end <= start:
+                continue
+            try:
+                found = harvest(json.loads(body[start:end + 1]))
+            except json.JSONDecodeError:
+                continue
+            if found:
+                return found
     return []
 
 

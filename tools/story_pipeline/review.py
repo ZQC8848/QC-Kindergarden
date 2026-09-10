@@ -2,7 +2,7 @@
 """Blind review from the terminal — the stand-in for the Discord bot.
 
     python tools/story_pipeline/review.py                          # list pending, blind
-    python tools/story_pipeline/review.py --show c-a7f3
+    python tools/story_pipeline/review.py --show c-a7f3            # read the whole story
     python tools/story_pipeline/review.py c-a7f3 discard --reason stale_joke
     python tools/story_pipeline/review.py c-a7f3 shortlist
     python tools/story_pipeline/review.py c-a7f3 select
@@ -48,18 +48,26 @@ def find(cid: str) -> store.Candidate:
     sys.exit(f'[review] no candidate {cid!r}')
 
 
-def show(c: store.Candidate, *, blind: bool = True) -> None:
-    print(f'\n{c.id}  [{c.kind}] {c.location}  cast: {", ".join(c.cast) or "-"}')
+def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
+    print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()} 字')
     if not blind:
         print(f'  model: {c.model}  taste: {c.taste_context}  slot: {c.slot}')
     if c.parse_failed:
-        print('  !! response could not be parsed; see the raw block in the file')
-    print(f'  Hook  {c.hook}')
-    print(f'  Turn  {c.turn}')
-    if c.differs_from:
-        print(f'  Diff  {c.differs_from}')
+        print('  !! 模型输出无法解析；原始内容在文件里')
+    if c.premise_line:
+        print(f'  前提  {c.premise_line}')
+    if c.cast:
+        print(f'  出场  {", ".join(c.cast)}')
+    if c.stands_beside:
+        print(f'  比照  {c.nearest} — {c.stands_beside}')
+    if c.residue:
+        print(f'  残留  {c.residue}')
     if c.new_elements not in ('none', None, [], ''):
-        print(f'  New   {c.new_elements}')
+        print(f'  新元素 {c.new_elements}')
+    if full and c.story:
+        print()
+        for line in c.story.splitlines():
+            print(f'  {line}')
     if c.verdict != 'pending':
         tail = f' ({store.REASONS.get(c.reason, c.reason)})' if c.reason else ''
         print(f'  -> {c.verdict}{tail}' + (f'  notes: {c.notes}' if c.notes else ''))
@@ -85,7 +93,9 @@ def main() -> int:
         return 0
 
     if args.show:
-        show(find(args.show), blind=True)
+        # The full prose. Stories are long now, so the list view stays a summary and this
+        # is how one gets read end to end.
+        show(find(args.show), blind=True, full=True)
         return 0
 
     if args.stats:

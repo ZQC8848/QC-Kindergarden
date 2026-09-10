@@ -36,21 +36,21 @@ import store
 from adapters import ADAPTERS, parse_outlines
 
 MODEL_ORDER = ['claude', 'codex', 'kimi', 'deepseek']
+BASE_SLOTS = ['consequence', 'contradiction', 'escalation', 'transposition']
 
-STUB = json.dumps(
-    [
-        {
-            'hook': '（dry run）某人在某处干了一件蠢事。',
-            'turn': '（dry run）另一个人早就知道，只是没说。',
-            'kind': 'memory',
-            'cast': ['haide'],
-            'location': 'Courtyard',
-            'differs_from': '与 2026-09-09-seven-day-bite 相近，但起因不同。',
-            'new_elements': 'none',
-        }
-    ],
-    ensure_ascii=False,
-)
+STUB_STORY = {
+    'title': '（dry run）某人做了一件不可能的事',
+    'premise_line': '（dry run）用了某人的某条矛盾。',
+    'kind': 'memory',
+    'cast': ['haide'],
+    'location': 'Courtyard',
+    'nearest': '2026-09-09-seven-day-bite',
+    'stands_beside': '（dry run）它带来了那一篇没有的东西。',
+    'residue': '（dry run）从此某样东西再也没有变回去。',
+    'new_elements': 'none',
+    'story': '（dry run）这里本该是一篇完整的短篇故事。',
+}
+STUB = json.dumps(STUB_STORY, ensure_ascii=False)
 
 
 def next_round_id(today: str) -> str:
@@ -64,7 +64,7 @@ def round_index() -> int:
 
 
 def call(model: str, text: str, dry: bool) -> tuple[str, str | None]:
-    """Returns (raw output, error). A failure costs one outline, never the round."""
+    """Returns (raw output, error). A failure costs one story, never the round."""
     if dry:
         return STUB, None
     try:
@@ -73,24 +73,24 @@ def call(model: str, text: str, dry: bool) -> tuple[str, str | None]:
         return '', f'{type(exc).__name__}: {exc}'
 
 
-def to_candidate(raw: str, model: str, round_id: str, slot: str, taste: str, fallback_combo: dict) -> store.Candidate:
+def to_candidate(raw: str, model: str, round_id: str, slot: str, taste: str) -> store.Candidate:
     outlines = parse_outlines(raw)
+    base = dict(id=store.new_id(), round=round_id, slot=slot, model=model, taste_context=taste)
     if not outlines:
-        return store.Candidate(
-            id=store.new_id(), round=round_id, slot=slot, model=model, taste_context=taste,
-            hook='(unparsed)', turn='', kind='memory', cast=fallback_combo['cast'],
-            location=fallback_combo['location'], parse_failed=True, raw=raw,
-        )
+        return store.Candidate(**base, title='(unparsed)', parse_failed=True, raw=raw)
     o = outlines[0]
     return store.Candidate(
-        id=store.new_id(), round=round_id, slot=slot, model=model, taste_context=taste,
-        hook=str(o.get('hook', '')).strip(),
-        turn=str(o.get('turn', '')).strip(),
+        **base,
+        title=str(o.get('title', '')).strip(),
+        premise_line=str(o.get('premise_line', '')).strip(),
         kind='extra' if o.get('kind') == 'extra' else 'memory',
-        cast=o.get('cast') or fallback_combo['cast'],
-        location=str(o.get('location') or fallback_combo['location']),
-        differs_from=str(o.get('differs_from', '')).strip(),
+        cast=o.get('cast') or [],
+        location=str(o.get('location') or ''),
+        nearest=str(o.get('nearest', '')).strip(),
+        stands_beside=str(o.get('stands_beside', '')).strip(),
+        residue=str(o.get('residue', '')).strip(),
         new_elements=o.get('new_elements', 'none'),
+        story=str(o.get('story', '')).strip(),
         raw=raw,
     )
 
@@ -100,9 +100,8 @@ def main() -> int:
     ap.add_argument('--dry-run', action='store_true', help='stub models; writes a real round')
     ap.add_argument('--no-taste', action='store_true', help='ablation arm: brief without the taste profile')
     ap.add_argument('--models', default=','.join(MODEL_ORDER))
-    ap.add_argument('--combos', type=int, default=3)
+    ap.add_argument('--slots', default=','.join(BASE_SLOTS), help='which premise slots to run')
     ap.add_argument('--no-expansion', action='store_true')
-    ap.add_argument('--seed-text', default=None, help="QC's own idea; sent to every model")
     args = ap.parse_args()
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -111,6 +110,10 @@ def main() -> int:
     unknown = [m for m in models if m not in ADAPTERS]
     if unknown:
         sys.exit(f'[round] unknown model(s): {", ".join(unknown)}')
+    slots = [s.strip() for s in args.slots.split(',') if s.strip()]
+    bad = [s for s in slots if s not in BASE_SLOTS]
+    if bad:
+        sys.exit(f'[round] unknown slot(s): {", ".join(bad)}; expected {", ".join(BASE_SLOTS)}')
 
     if not args.dry_run:
         blocked = [(m, ADAPTERS[m].available()[1]) for m in models if not ADAPTERS[m].available()[0]]
@@ -123,59 +126,45 @@ def main() -> int:
     today = dt.date.today().isoformat()
     round_id = next_round_id(today)
     taste = 'off' if args.no_taste else 'on'
-    seed = abs(hash(round_id)) % (2**31)
 
-    # One brief per combo; every model gets that combo's brief unchanged.
-    _, combos = brief_mod.build(taste=not args.no_taste, n=args.combos, seed=seed)
-    briefs = []
-    for combo in combos:
-        text, _ = brief_mod.build(taste=not args.no_taste, combos=[combo])
-        briefs.append(text)
+    # One brief per slot; every model gets that slot's brief unchanged. The premise shape
+    # is the controlled variable now — not a cast and a room.
+    briefs = {slot: brief_mod.build(taste=not args.no_taste, slot=slot) for slot in slots}
 
-    jobs = []   # (model, slot, brief text, combo)
-    for combo, text in zip(combos, briefs):
-        for m in models:
-            jobs.append((m, 'baseline', text, combo))
+    jobs = [(m, slot, briefs[slot]) for slot in slots for m in models]
 
     expansion_model = None
     if not args.no_expansion:
         expansion_model = MODEL_ORDER[round_index() % len(MODEL_ORDER)]
         if expansion_model not in models:
             expansion_model = models[0]
-        exp_text, exp_combos = brief_mod.build(taste=not args.no_taste, expansion=True, seed=seed + 1)
-        jobs.append((expansion_model, 'expansion', exp_text, exp_combos[0]))
-
-    if args.seed_text:
-        seed_text, seed_combos = brief_mod.build(taste=not args.no_taste, n=1, seed=seed + 2)
-        seed_text += f'\n## QC 的种子\n\n请基于下面这个想法写大纲，扩写它而不是替换它：\n\n{args.seed_text}\n'
-        for m in models:
-            jobs.append((m, 'seed', seed_text, seed_combos[0]))
+        briefs['expansion'] = brief_mod.build(taste=not args.no_taste, slot='expansion')
+        jobs.append((expansion_model, 'expansion', briefs['expansion']))
 
     print(f'[round] {round_id}  taste={taste}  {len(jobs)} calls '
-          f'({len(models)} models x {len(combos)} combos'
-          + (f' + expansion:{expansion_model}' if expansion_model else '')
-          + (f' + seed x{len(models)}' if args.seed_text else '') + ')')
-
-    # HTTP models run in parallel; the CLIs each start an agent loop and are slow, so
-    # they are capped rather than fanned out.
-    results = []
-    with futures.ThreadPoolExecutor(max_workers=4) as pool:
-        futs = {pool.submit(call, m, text, args.dry_run): (m, slot, combo) for m, slot, text, combo in jobs}
-        for fut in futures.as_completed(futs):
-            m, slot, combo = futs[fut]
-            raw, err = fut.result()
-            results.append((m, slot, combo, raw, err))
-            print(f'  {"FAIL" if err else "ok  "} {m:9} {slot:9} {combo["location"]:18} {err or ""}')
+          f'({len(models)} models x {len(slots)} slots'
+          + (f' + expansion:{expansion_model}' if expansion_model else '') + ')')
+    print('[round] full short stories; allow up to half an hour. Candidates are written as they arrive.', flush=True)
 
     written, failed, unparsed = [], 0, 0
-    for m, slot, combo, raw, err in results:
-        if err:
-            failed += 1
-            continue
-        c = to_candidate(raw, m, round_id, slot, taste, combo)
-        unparsed += int(c.parse_failed)
-        store.write(c)
-        written.append(c)
+    # One worker per job: almost all of the elapsed time is spent waiting on a model, and
+    # capping at four meant a single slow CLI call blocked three other models behind it.
+    with futures.ThreadPoolExecutor(max_workers=min(len(jobs), 8)) as pool:
+        futs = {pool.submit(call, m, text, args.dry_run): (m, slot) for m, slot, text in jobs}
+        for fut in futures.as_completed(futs):
+            m, slot = futs[fut]
+            raw, err = fut.result()
+            if err:
+                failed += 1
+                print(f'  FAIL {m:9} {slot:14} {err}')
+                continue
+            # Written as it arrives, not after the round. A long round used to show no
+            # progress at all and would have lost every finished story to one interrupt.
+            c = to_candidate(raw, m, round_id, slot, taste)
+            unparsed += int(c.parse_failed)
+            store.write(c)
+            written.append(c)
+            print(f'  ok   {m:9} {slot:14} {c.words()} 字  {c.title}', flush=True)
 
     meta = {
         'round': round_id,
@@ -183,19 +172,19 @@ def main() -> int:
         'dry_run': args.dry_run,
         'taste_context': taste,
         'models': models,
+        'slots': slots,
         'expansion_model': expansion_model,
-        'seeded': bool(args.seed_text),
-        'combos': combos,
         # The identical-input claim, made checkable rather than asserted.
-        'brief_sha256': {c['location']: brief_mod.sha256(t) for c, t in zip(combos, briefs)},
+        'brief_sha256': {slot: brief_mod.sha256(text) for slot, text in briefs.items()},
         'calls': len(jobs),
         'written': len(written),
         'failed': failed,
         'parse_failed': unparsed,
+        'median_length': sorted(c.words() for c in written)[len(written) // 2] if written else 0,
     }
     store.write_round_meta(round_id, meta)
 
-    print(f'\n[round] wrote {len(written)} candidates to '
+    print(f'\n[round] wrote {len(written)} stories to '
           f'{(store.CANDIDATES / round_id).relative_to(brief_mod.ROOT).as_posix()}')
     if failed:
         print(f'[round] {failed} call(s) failed')
