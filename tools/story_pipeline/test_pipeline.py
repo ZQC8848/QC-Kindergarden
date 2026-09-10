@@ -84,6 +84,13 @@ class Verdicts(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.decide(self.make(), 'discarded', reason='vibes', now=NOW)
 
+    def test_the_two_buckets_round_r01_forced_are_distinct(self):
+        # 太日常 means the premise never left reality; 寡淡 means it did and still had no
+        # flavour. Round r01 produced both complaints and the original set had neither.
+        self.assertIn('too_everyday', store.REASONS)
+        self.assertIn('bland', store.REASONS)
+        self.assertNotEqual(store.REASONS['too_everyday'], store.REASONS['bland'])
+
     def test_discard_with_a_known_reason_is_recorded(self):
         c = store.decide(self.make(), 'discarded', reason='stale_joke', now=NOW)
         self.assertEqual((c.verdict, c.reason, c.decided_at), ('discarded', 'stale_joke', NOW))
@@ -147,7 +154,7 @@ class RoundTrip(unittest.TestCase):
             ('kimi', 'selected', None),
             ('kimi', 'selected_with_notes', None),
             ('kimi', 'discarded', 'not_funny'),
-            ('kimi', 'discarded', 'too_mild'),
+            ('kimi', 'discarded', 'bland'),
             ('codex', 'discarded', 'stale_joke'),
         ]):
             c = store.Candidate(

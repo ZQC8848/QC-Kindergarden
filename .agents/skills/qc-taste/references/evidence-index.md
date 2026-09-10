@@ -1,6 +1,6 @@
 # QC taste evidence index
 
-Version: 0.2  
+Version: 0.3  
 Verified: 2026-09-09
 
 This index records why each current rule exists. It distinguishes direct human decisions from weaker inference based on accepted artifacts. Line numbers are snapshots and may move; the source phrase and turn remain the durable locator.
@@ -29,6 +29,8 @@ This index records why each current rule exists. It distinguishes direct human d
 | E020 | `ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md:1627` | QC seeds the group photo directly: courtyard tree filling most of the frame, Fufu and Haide at centre, every character with a different expression and action, a sense of motion rather than a static portrait. Independent of E010/E013 — different session, different agent, different artifact, and a seed rather than a correction. | T011 |
 | E021 | `ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md:1721` | Adding a story, QC says the character bibles must not be updated, and asks for a hook that confirms before any write-back. Turning a one-off instruction into enforced machinery is stronger than repeating the instruction. | T006, T015 |
 | E022 | `ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md:7035` | Of three original details the model added to QC's story seed, QC cuts exactly two — Haide painting himself into the picture, Mushi adding a fifth hat — and keeps the one anchored to established canon (Whiskle being mistaken for a girl). Everything else in the polish is left untouched. First clean keep/cut discrimination inside a single draft. | T013, T018 |
+| E023 | `ResearchAssets/story-candidates/2026-09-09-r01/` (6 candidates + `round.json`) | QC rejects all six of the pipeline's first round; both models score 0%. Four verbatim comments: 「不好笑 感觉尴尬 莫名其妙」「不好笑」「感觉很寡淡」「太日常了 很寡淡」. Every premise — hat in the soup, lunch barter market, laughing contest, poolside sponsorship — could have happened at a real daycare. First large-sample, single-criterion, no-exception rejection in the corpus. | T019 |
+| E024 | Third-party reader's summary of the existing scripts, relayed and endorsed by QC, 2026-09-09 | What a reader finds interesting: the setting is a kindergarten but the content is "not everyday, very imaginative, even a little absurd, yet never off the character settings". Not QC's own decision — it counts because QC brought it forward as grounds for an update. Weak alone; strong with E023, which converges on the same point from the opposite direction. | T019, T002 |
 
 ## Known evidence limitations
 
@@ -37,6 +39,8 @@ This index records why each current rule exists. It distinguishes direct human d
 - E015 comes from a conversation that is now archived; replace it with a line-anchored citation at the next update.
 - E019 is a single dense turn carrying five distinct signals. It is strong evidence — first person, explicit, and contrastive — but it is still one turn, and T017 and T018 each rest on one event.
 - Line numbers into `2026-09-07-claude-code-repo-setup-and-character-bibles.md` moved +4 on 2026-09-09 when that session was re-exported in full. The body changed only by line-for-line substitution; the offset comes from a longer header. All five earlier citations were re-checked against their content.
+- T019's ceiling is unevidenced. E023 fixes only the lower bound; nothing in the corpus shows QC rejecting a premise for going too far. T016 has the same gap and pushes the same direction, so the two compound.
+- E024 is third-party observation admitted through QC's endorsement. It is the first evidence in this index that did not originate with QC or with an accepted artifact, and it should not be treated as equal in weight to a direct instruction.
 - No held-out preference test has yet been run. Version 0.2 should assist decisions, not claim predictive accuracy.
 
 ## Scan log
@@ -45,4 +49,5 @@ Update mode reads only records that are new or extended since the last run; the 
 
 | Date | Records read | Outcome |
 |---|---|---|
+| 2026-09-09 | `story-candidates/2026-09-09-r01` (6 candidates, new stream) | 0.2 → 0.3. One rule added (T019), one strengthened (T002). The scanner was extended first: it had covered only ai-chat-history, so six freshly tagged rejections read as "nothing new" while `rejected` is the protocol's heaviest evidence type. Approved by QC in full. |
 | 2026-09-09 | `2026-09-07-claude-code-repo-setup-and-character-bibles.md:1405-9818` (re-export), `meta-2026-09-07-claude-code-research-value-and-creative-identity.md:1-1432` (new) | 0.1 → 0.2. Four rules strengthened, three added (T016–T018), one revised (T013 widened from visual to all revision). The ~8400 new lines of the first record are mostly engineering; four turns carried creative decisions. The second record is a methodology session and supplied most of the update. Approved by QC in full. |

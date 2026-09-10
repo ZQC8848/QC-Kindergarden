@@ -28,17 +28,21 @@ CANDIDATES = ROOT / 'ResearchAssets' / 'story-candidates'
 VERDICTS = ('pending', 'discarded', 'shortlisted', 'selected', 'selected_with_notes')
 SELECTED = ('selected', 'selected_with_notes')
 
-# Kept short on purpose: six coarse buckets QC can hit in one click. If most discards
-# land in "就是不好笑" after a few rounds the set is too coarse and should be split —
-# that is a decision to make from the distribution, not up front.
+# Rewritten after round r01, where QC's own words were 尴尬 / 莫名其妙 / 寡淡 / 太日常
+# and only one of the six original buckets ("就是不好笑") matched anything they said.
+# The first two entries carry the defect T019 exists to name, and they are separate on
+# purpose: 太日常 means the premise never left reality, 寡淡 means it did and still had
+# no flavour. One round was enough to show the first set was guesswork.
 REASONS = {
+    'too_everyday': '太日常，前提没有超出现实',
+    'bland': '寡淡，有前提但没味道',
+    'cringe': '尴尬，笑点用力但没接住',
+    'incoherent': '莫名其妙，动机或逻辑读不通',
+    'not_funny': '就是不好笑',
     'off_character': '不像这个角色',
     'stale_joke': '梗太老',
-    'too_mild': '太温和',
-    'no_causality': '没有因果',
     'duplicate': '和已有故事重复',
-    'not_funny': '就是不好笑',
-    'never_chosen': '备选三次未选中',
+    'never_chosen': '备选三次未选中',   # written by the shortlist decay, not by QC
 }
 
 MAX_REVISITS = 3

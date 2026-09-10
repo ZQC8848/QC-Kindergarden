@@ -1,6 +1,6 @@
 # QC taste profile
 
-Version: 0.2  
+Version: 0.3  
 Evidence through: 2026-09-09  
 Status: evidence-backed working profile
 
@@ -13,6 +13,16 @@ QC tends to prefer work that feels as if only this cast, this social circle, and
 ### 1. Start from characters; let theme emerge
 
 Do not impose a solemn theme and then force the cast to demonstrate it. Begin with a character's want, contradiction, blind spot, relationship, or recurring object. Let any theme appear through the collision of those elements.
+
+### 1a. The premise must be impossible in a real kindergarten
+
+Start from the characters, then drop them into something that could not actually happen. A boy swears he will turn into a dog if he misbehaves again, and then does. A gold Ferrari collects speeding tickets at two in the morning. Four girls are restaged as a biker witch coven. Reach for the imaginative, and do not flinch from the frankly absurd.
+
+Then anchor it. The absurdity has to run on the characters' established logic, never against it — a reader described the appeal as "not everyday, very imaginative, even a little absurd, but never off the character settings", and the last clause is doing as much work as the rest. Absurd without an anchor is spectacle, which the boundaries below already refuse.
+
+The failure this rule exists to prevent is specific and observed. Round r01 produced six outlines — a hat knocked into the soup, a lunch barter market, a make-Whiskle-laugh contest, an afternoon by the pool. They used the catchphrases, the props, the relationships; they executed rules 1 and 2 well. QC rejected all six: 「太日常了 很寡淡」. Every one of them could have happened at any daycare on any Tuesday. That is the whole defect.
+
+Rule 3 governs what happens *after* the premise. This rule governs whether the premise was worth escalating at all.
 
 ### 2. Build the character around a second self
 
@@ -104,6 +114,7 @@ This holds for prose as well. "Haide didn't paint himself in, the witches have n
 - Do not reduce a character to MBTI or a single trope.
 - Do not use interchangeable banter that could belong to any cast.
 - Do not add spectacle that lacks a character cause.
+- Do not settle for a premise that could happen on an ordinary day.
 - Do not make “cute” mean harmless, sentimental, or conflict-free.
 - Do not make every character equally loud or equally central.
 - Do not expose a secret inside a limited character viewpoint.

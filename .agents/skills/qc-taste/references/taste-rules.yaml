@@ -1,4 +1,4 @@
-version: "0.2"
+version: "0.3"
 evidence_through: "2026-09-09"
 status: "working-profile"
 
@@ -39,6 +39,10 @@ consumed_records:
     sha256: "e762dba17b0e2b7ef039bc8f4050cdc3143446d308eef5f2e59aa7fee9f1ee06"
     lines: 1432
     consumed_on: "2026-09-09"
+  - path: "ResearchAssets/story-candidates/2026-09-09-r01"
+    sha256: "852e0d45f7548d746d65c422aeabf3fc124315962d6fc102407dca703320b98b"
+    lines: 6
+    consumed_on: "2026-09-09"
 
 rules:
   - id: "T001"
@@ -51,7 +55,7 @@ rules:
     rule: "Give important characters a behavioral second self that contradicts their readable surface."
     scope: "qc-kindergarten.character"
     confidence: "stable"
-    evidence: ["E004", "E005", "E006", "E007"]
+    evidence: ["E004", "E005", "E006", "E007", "E024"]
     counterexamples: []
   - id: "T003"
     rule: "Escalate absurd events through character-caused consequences rather than random gags."
@@ -152,3 +156,11 @@ rules:
     evidence: ["E022"]
     counterexamples: []
     open_question: "One event. May be specific to that story, where an extra figure in the painting would have disturbed the counting joke. Re-check at the next rejected polish."
+  - id: "T019"
+    rule: "The premise must be something that could not happen in a real kindergarten. Reach for the imaginative and frankly absurd, then anchor it: the absurdity runs on the characters' established logic, never against it."
+    scope: "qc-kindergarten.story"
+    confidence: "repeated"
+    evidence: ["E023", "E024"]
+    counterexamples: []
+    open_question: "Only the lower bound is evidenced - too everyday gets rejected. Nothing in the corpus shows QC rejecting a premise for being too far out, so the ceiling is unmapped. Same gap as T016, and both rules push the same direction. Record the first rejected absurd premise as a priority."
+    note: "Neither half stands alone. Without the first sentence the profile produces slice-of-life, which is what happened in round r01: six outlines executed T001 and T002 well and were rejected 6/6. Without the second sentence this collides with T002 and with the boundary against spectacle that has no character cause."
