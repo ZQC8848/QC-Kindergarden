@@ -22,21 +22,29 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-REQUEST_TIMEOUT = 180      # HTTP
+REQUEST_TIMEOUT = 300      # HTTP; the expansion prompt reasons longer and timed out at 180
 CLI_TIMEOUT = 600          # agent CLIs start a whole loop; they are slow
 
 
 def load_env() -> dict:
-    """Read .env without a dependency. Values are never logged."""
+    """Keys, in precedence order: environment, repo-root .env, private submodule config.
+
+    Same chain as .agents/skills/discord-notify. The repo-root .env is gitignored, so a
+    key put there stays on one machine; ResearchAssets/config/ is the committed private
+    location that survives a fresh clone. Values are never logged.
+    """
     env = dict(os.environ)
-    path = ROOT / '.env'
-    if path.exists():
+    for path in (ROOT / '.env', ROOT / 'ResearchAssets' / 'config' / 'story-pipeline.env'):
+        if not path.exists():
+            continue
         for line in path.read_text(encoding='utf-8').splitlines():
             line = line.strip()
             if not line or line.startswith('#') or '=' not in line:
                 continue
             k, _, v = line.partition('=')
-            env.setdefault(k.strip(), v.strip().strip('"\''))
+            v = v.strip().strip('"\'')
+            if v and not v.startswith('your-'):  # skip .env.example-style placeholders
+                env.setdefault(k.strip(), v)
     return env
 
 
@@ -132,7 +140,10 @@ def _cli_adapter(name: str, exe: str, argv: list[str]) -> Adapter:
 # The two CLI invocations are the ones most likely to drift: both tools iterate fast.
 # If a round starts failing on them, check `claude --help` / `codex --help` first.
 ADAPTERS = {
-    'kimi': _http_adapter('kimi', 'MOONSHOT_API_KEY', 'https://api.moonshot.cn/v1', 'kimi-k2-0905-preview'),
+    # Moonshot runs two separate regions with separate keys: api.moonshot.cn (CN) and
+    # api.moonshot.ai (international). A key from one returns 401 on the other. This
+    # project's key is on .ai. Model ids differ from the CN catalogue too.
+    'kimi': _http_adapter('kimi', 'MOONSHOT_API_KEY', 'https://api.moonshot.ai/v1', 'kimi-k3'),
     'deepseek': _http_adapter('deepseek', 'DEEPSEEK_API_KEY', 'https://api.deepseek.com/v1', 'deepseek-chat'),
     'claude': _cli_adapter('claude', 'claude', ['claude', '-p', '--allowed-tools', '']),
     'codex': _cli_adapter('codex', 'codex', ['codex', 'exec', '--skip-git-repo-check']),
