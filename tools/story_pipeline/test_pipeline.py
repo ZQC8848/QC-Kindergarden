@@ -208,6 +208,25 @@ class RoundTrip(unittest.TestCase):
         self.assertEqual(s['kimi']['discarded'], 2)
 
 
+class ToCandidate(unittest.TestCase):
+    def test_valid_json_with_no_outline_is_flagged(self):
+        # Worse than unparseable: it lands as an empty candidate that looks real. Kimi
+        # returned exactly this once — a title, a truncated premise, and nothing else.
+        import run_round
+        raw = '{"title": "陆姚不炸的那几天", "premise_line": "放大既有事实", "kind": "memory"}'
+        c = run_round.to_candidate(raw, 'kimi', 'r-test', 'escalation', 'on')
+        self.assertTrue(c.parse_failed)
+        self.assertEqual(c.title, '陆姚不炸的那几天')
+        self.assertEqual(c.raw, raw)
+
+    def test_a_complete_response_is_not_flagged(self):
+        import run_round
+        raw = '{"title": "T", "outline": "发生了一件事。", "cast": ["haide"], "kind": "memory"}'
+        c = run_round.to_candidate(raw, 'kimi', 'r-test', 'escalation', 'on')
+        self.assertFalse(c.parse_failed)
+        self.assertEqual(c.outline, '发生了一件事。')
+
+
 class Brief(unittest.TestCase):
     def test_all_twelve_characters_are_in_the_brief(self):
         text = brief_mod.build(taste=False, slot='contradiction')

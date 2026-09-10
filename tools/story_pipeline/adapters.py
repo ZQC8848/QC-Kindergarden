@@ -152,18 +152,29 @@ def _cli_adapter(name: str, exe: str, argv: list[str]) -> Adapter:
     return Adapter(name, 'cli', generate, available)
 
 
-# The two CLI invocations are the ones most likely to drift: both tools iterate fast.
-# If a round starts failing on them, check `claude --help` / `codex --help` first.
+# Every adapter is pinned to the strongest tier its account can reach, verified against
+# each provider's live catalogue on 2026-09-10 rather than assumed. The CLI invocations
+# are the ones most likely to drift: both tools iterate fast, so if a round starts failing
+# on them check `claude --help` / `codex --help` first.
 ADAPTERS = {
     # Moonshot runs two separate regions with separate keys: api.moonshot.cn (CN) and
-    # api.moonshot.ai (international). A key from one returns 401 on the other. This
-    # project's key is on .ai. Model ids differ from the CN catalogue too.
+    # api.moonshot.ai (international). A key from one returns 401 on the other; this
+    # project's key is on .ai, whose catalogue is kimi-k3, kimi-k2.6 and two -code
+    # variants. k3 is the newest general model; the -code ones are code-specialised and
+    # wrong for prose.
     'kimi': _http_adapter('kimi', 'MOONSHOT_API_KEY', 'https://api.moonshot.ai/v1', 'kimi-k3'),
-    'deepseek': _http_adapter('deepseek', 'DEEPSEEK_API_KEY', 'https://api.deepseek.com/v1', 'deepseek-chat'),
+    # The catalogue lists deepseek-v4-pro and deepseek-flash. `deepseek-chat`, used until
+    # now, still answers but is a legacy alias that appears in neither — so it was an
+    # unknown tier. -flash is the cheap fast one; -v4-pro is the flagship.
+    'deepseek': _http_adapter('deepseek', 'DEEPSEEK_API_KEY', 'https://api.deepseek.com/v1', 'deepseek-v4-pro'),
     # Both read the prompt from stdin: `claude -p` with no prompt argument, `codex exec -`.
-    'claude': _cli_adapter('claude', 'claude', ['claude', '-p']),
+    # Opus at max effort is the top of what the subscription reaches.
+    'claude': _cli_adapter('claude', 'claude', ['claude', '-p', '--model', 'opus', '--effort', 'max']),
+    # codex exec has no --effort flag; reasoning effort goes through a config override.
     # --skip-git-repo-check: the scratch directory is deliberately not a git repo.
-    'codex': _cli_adapter('codex', 'codex', ['codex', 'exec', '--skip-git-repo-check', '-']),
+    'codex': _cli_adapter('codex', 'codex',
+                          ['codex', 'exec', '--skip-git-repo-check',
+                           '-c', 'model_reasoning_effort="high"', '-']),
 }
 
 

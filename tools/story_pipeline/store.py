@@ -96,6 +96,7 @@ class Candidate:
     notes: str | None = None
     revisit_count: int = 0
     decided_at: str | None = None
+    published_at: str | None = None   # set once pushed to Discord, so re-runs do not duplicate
     parse_failed: bool = False
     raw: str = ''
 
@@ -119,7 +120,7 @@ def new_id() -> str:
 # --------------------------------------------------------------------------- io
 
 _SCALAR = ('id', 'round', 'slot', 'model', 'taste_context', 'title', 'kind', 'location',
-           'nearest', 'verdict', 'reason', 'notes', 'decided_at')
+           'nearest', 'verdict', 'reason', 'notes', 'decided_at', 'published_at')
 
 
 def _yaml_scalar(v) -> str:
@@ -194,6 +195,18 @@ def read(path: Path) -> Candidate:
 def _field(body: str, label: str) -> str:
     m = re.search(rf'^\*\*{re.escape(label)}\*\*\s*(.+)$', body, re.M)
     return m.group(1).strip() if m else ''
+
+
+def mark_published(c: Candidate, *, now: str) -> Candidate:
+    """Record that this candidate has been pushed to Discord.
+
+    Without it, publishing a round that finished in stages would re-send everything
+    already posted — and a round now finishes in stages by design, because the slow
+    models trail the fast ones by many minutes.
+    """
+    c.published_at = now
+    write(c)
+    return c
 
 
 def load_round(round_id: str) -> list[Candidate]:

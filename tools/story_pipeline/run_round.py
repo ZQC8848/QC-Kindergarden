@@ -79,6 +79,12 @@ def to_candidate(raw: str, model: str, round_id: str, slot: str, taste: str) -> 
     if not outlines:
         return store.Candidate(**base, title='(unparsed)', parse_failed=True, raw=raw)
     o = outlines[0]
+    # Valid JSON that is missing the field the whole exercise is about is worse than
+    # unparseable output: it lands as an empty candidate and looks like a real one.
+    # Kimi did exactly this once, returning a title and nothing else.
+    if not str(o.get('outline', o.get('story', ''))).strip():
+        return store.Candidate(**base, title=str(o.get('title', '')).strip() or '(no outline)',
+                               parse_failed=True, raw=raw)
     return store.Candidate(
         **base,
         title=str(o.get('title', '')).strip(),

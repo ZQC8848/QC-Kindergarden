@@ -21,6 +21,7 @@ prose split across as many plain messages as it needs, cut on paragraph boundari
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import sys
 import time
@@ -164,7 +165,7 @@ def publish(c: store.Candidate, url: str, dry: bool) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--round', default=None)
-    ap.add_argument('--all', action='store_true', help='include already-decided candidates')
+    ap.add_argument('--all', action='store_true', help='include already-sent and already-decided candidates')
     ap.add_argument('--only', help='publish just this candidate id')
     ap.add_argument('--dry-run', action='store_true', help='print the payloads, send nothing')
     args = ap.parse_args()
@@ -180,7 +181,9 @@ def main() -> int:
     if args.only:
         cands = [c for c in cands if c.id == args.only]
     elif not args.all:
-        cands = [c for c in cands if c.verdict == 'pending']
+        # Unsent and unjudged. A round arrives in stages — the slow models trail the fast
+        # ones by many minutes — so this can be run repeatedly and only posts what is new.
+        cands = [c for c in cands if c.verdict == 'pending' and not c.published_at]
     if not cands:
         print('[publish] nothing to send')
         return 0
@@ -189,6 +192,11 @@ def main() -> int:
     print(f'[publish] {round_id}: {len(cands)} stor{"y" if len(cands) == 1 else "ies"}'
           + (' (dry run)' if args.dry_run else ''))
 
+    # The header introduces the round and carries the verdict commands, so it belongs at
+    # the top once. A round is now published in stages as the slow models land, and
+    # without this flag every follow-up run repeated it.
+    meta_path = store.CANDIDATES / round_id / 'round.json'
+    meta = json.loads(meta_path.read_text(encoding='utf-8')) if meta_path.exists() else {}
     header = (
         f'## 新一轮故事 · `{round_id}`\n'
         f'{len(cands)} 篇，作者匿名。读完在终端裁决：\n'
@@ -197,13 +205,22 @@ def main() -> int:
         'python tools/story_pipeline/review.py <id> shortlist\n'
         'python tools/story_pipeline/review.py <id> revise --notes "..."\n```'
     )
-    post(url, {'content': header}, args.dry_run)
-    total = 1
+    total = 0
+    if not meta.get('header_posted'):
+        post(url, {'content': header}, args.dry_run)
+        total = 1
+        if not args.dry_run and meta:
+            meta['header_posted'] = True
+            meta_path.write_text(
+                json.dumps(meta, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n'
+            )
 
     for c in cands:
         if not args.dry_run:
             time.sleep(THROTTLE)
         total += publish(c, url, args.dry_run)
+        if not args.dry_run:
+            store.mark_published(c, now=dt.datetime.now().astimezone().isoformat(timespec='seconds'))
         print(f'  sent {c.id}  {c.words()} 字  「{c.title}」')
 
     print(f'[publish] {total} message(s) '
