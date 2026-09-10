@@ -1,6 +1,6 @@
 # QC taste evidence index
 
-Version: 0.3  
+Version: 0.4  
 Verified: 2026-09-09
 
 This index records why each current rule exists. It distinguishes direct human decisions from weaker inference based on accepted artifacts. Line numbers are snapshots and may move; the source phrase and turn remain the durable locator.
@@ -31,6 +31,8 @@ This index records why each current rule exists. It distinguishes direct human d
 | E022 | `ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md:7035` | Of three original details the model added to QC's story seed, QC cuts exactly two — Haide painting himself into the picture, Mushi adding a fifth hat — and keeps the one anchored to established canon (Whiskle being mistaken for a girl). Everything else in the polish is left untouched. First clean keep/cut discrimination inside a single draft. | T013, T018 |
 | E023 | `ResearchAssets/story-candidates/2026-09-09-r01/` (6 candidates + `round.json`) | QC rejects all six of the pipeline's first round; both models score 0%. Four verbatim comments: 「不好笑 感觉尴尬 莫名其妙」「不好笑」「感觉很寡淡」「太日常了 很寡淡」. Every premise — hat in the soup, lunch barter market, laughing contest, poolside sponsorship — could have happened at a real daycare. First large-sample, single-criterion, no-exception rejection in the corpus. | T019 |
 | E024 | Third-party reader's summary of the existing scripts, relayed and endorsed by QC, 2026-09-09 | What a reader finds interesting: the setting is a kindergarten but the content is "not everyday, very imaginative, even a little absurd, yet never off the character settings". Not QC's own decision — it counts because QC brought it forward as grounds for an update. Weak alone; strong with E023, which converges on the same point from the opposite direction. | T019, T002 |
+| E025 | `ResearchAssets/story-candidates/2026-09-09-r02/` (9 candidates + `round.json`) | QC rejects the whole round; both models score 0% again. Only one defect is named — Haide lured by a bone — so eight are filed `superseded` (produced under rules that have since changed) and only `c-4fd7` as `off_character`. Four of the nine put 10–12 characters in one scene, against 3–4 in r01, flattening the dominant comic line. Lengths ran 817–4895 with no ceiling in force. | T021, T004 (counterexample) |
+| E027 | Measured lengths of the accepted stories: 2086 / 517 / 493 / 483 / 454 / 387 non-whitespace characters, median 488 | Rejecting r02, QC asks for the length limit back, sets it at the longest accepted plus 200, and adds that writing to the maximum is not encouraged. | T021 |
 
 ## Known evidence limitations
 
@@ -49,5 +51,6 @@ Update mode reads only records that are new or extended since the last run; the 
 
 | Date | Records read | Outcome |
 |---|---|---|
+| 2026-09-10 | `story-candidates/2026-09-09-r02` (9 candidates) | 0.3 → 0.4. T021 added; T004 gains its first counterexample. **T020 was proposed and not adopted**: QC approved the substance — a forced form never lowers the mind — but ruled it belongs in Haide's bible as canon, since one character is not a pattern. The id is kept as `retired` so it is never reused. QC's direct instruction about Haide, and the length ceiling, were applied without the review gate under authority-order 1 (an explicit instruction in the conversation outranks the profile); both are recorded here rather than as evidence rows because neither supports a profile rule. |
 | 2026-09-09 | `story-candidates/2026-09-09-r01` (6 candidates, new stream) | 0.2 → 0.3. One rule added (T019), one strengthened (T002). The scanner was extended first: it had covered only ai-chat-history, so six freshly tagged rejections read as "nothing new" while `rejected` is the protocol's heaviest evidence type. Approved by QC in full. |
 | 2026-09-09 | `2026-09-07-claude-code-repo-setup-and-character-bibles.md:1405-9818` (re-export), `meta-2026-09-07-claude-code-research-value-and-creative-identity.md:1-1432` (new) | 0.1 → 0.2. Four rules strengthened, three added (T016–T018), one revised (T013 widened from visual to all revision). The ~8400 new lines of the first record are mostly engineering; four turns carried creative decisions. The second record is a methodology session and supplied most of the update. Approved by QC in full. |

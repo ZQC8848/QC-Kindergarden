@@ -1,6 +1,6 @@
 # QC taste profile
 
-Version: 0.3  
+Version: 0.4  
 Evidence through: 2026-09-09  
 Status: evidence-backed working profile
 
@@ -69,6 +69,12 @@ Prefer short dialogue, concrete action, delayed reaction, and one strategically 
 
 When QC supplies a premise, additions earn their place by attaching to something already established. In the four-witches story three original details were added to QC's seed; the one that survived hooked onto Whiskle being mistaken for a girl, and the two that were cut — Haide painting himself into his own picture, Mushi sneaking a fifth hat onto the canvas — were merely charming. Charm is not attachment. Before adding a beat, name the existing trait, object, or running joke it hangs from; if there is none, cut it.
 
+### 7b. Keep it short
+
+Length is not a virtue. The accepted stories run 387 to 517 characters, with one 2086-character ensemble piece as the outlier; the median is 488. When a draft fills the ceiling it is almost never because the story needed the room — it is because something was left in: an explanation, an unpacked joke, or the entire cast crowded into one scene.
+
+Write the shortest version that lands. If five hundred characters finish it, use five hundred.
+
 ### 8. End on an altered recurring behavior
 
 A strong ending returns to an object, habit, or earlier line and quietly changes its meaning: a supposedly hated collar is never removed; the car key is put back; the extra McDonald's appears without explanation. The ending should leave a usable continuity hook rather than close with a moral.
@@ -115,6 +121,7 @@ This holds for prose as well. "Haide didn't paint himself in, the witches have n
 - Do not use interchangeable banter that could belong to any cast.
 - Do not add spectacle that lacks a character cause.
 - Do not settle for a premise that could happen on an ordinary day.
+- Do not mistake length for substance, or a full cast for an ensemble.
 - Do not make “cute” mean harmless, sentimental, or conflict-free.
 - Do not make every character equally loud or equally central.
 - Do not expose a secret inside a limited character viewpoint.

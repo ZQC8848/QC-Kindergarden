@@ -48,7 +48,7 @@ STUB_STORY = {
     'stands_beside': '（dry run）它带来了那一篇没有的东西。',
     'residue': '（dry run）从此某样东西再也没有变回去。',
     'new_elements': 'none',
-    'story': '（dry run）这里本该是一篇完整的短篇故事。',
+    'outline': '（dry run）这里本该是一条不超过 200 字的大纲。',
 }
 STUB = json.dumps(STUB_STORY, ensure_ascii=False)
 
@@ -90,7 +90,7 @@ def to_candidate(raw: str, model: str, round_id: str, slot: str, taste: str) -> 
         stands_beside=str(o.get('stands_beside', '')).strip(),
         residue=str(o.get('residue', '')).strip(),
         new_elements=o.get('new_elements', 'none'),
-        story=str(o.get('story', '')).strip(),
+        outline=str(o.get('outline', o.get('story', ''))).strip(),
         raw=raw,
     )
 
@@ -144,7 +144,7 @@ def main() -> int:
     print(f'[round] {round_id}  taste={taste}  {len(jobs)} calls '
           f'({len(models)} models x {len(slots)} slots'
           + (f' + expansion:{expansion_model}' if expansion_model else '') + ')')
-    print('[round] full short stories; allow up to half an hour. Candidates are written as they arrive.', flush=True)
+    print('[round] outlines only, 200 characters each. Candidates are written as they arrive.', flush=True)
 
     written, failed, unparsed = [], 0, 0
     # One worker per job: almost all of the elapsed time is spent waiting on a model, and
@@ -164,7 +164,7 @@ def main() -> int:
             unparsed += int(c.parse_failed)
             store.write(c)
             written.append(c)
-            over = '  ⚠ 超出上限' if c.words() > store.MAX_STORY_CHARS else ''
+            over = '  ⚠ 超出 200 字上限' if c.over_limit() else ''
             print(f'  ok   {m:9} {slot:14} {c.words()} 字{over}  {c.title}', flush=True)
 
     meta = {

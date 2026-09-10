@@ -1,4 +1,4 @@
-version: "0.3"
+version: "0.4"
 evidence_through: "2026-09-09"
 status: "working-profile"
 
@@ -14,35 +14,39 @@ consumed_records:
   - path: "ResearchAssets/ai-chat-history/2026-09-06-gpt-character-image-generation.md"
     sha256: "f2427d12ad8b5f761d852fccae4e95b528ec6ae03e695b0aa77b3ed88d62bcab"
     lines: 281
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-repo-setup-and-character-bibles.md"
     sha256: "b9f99a871207853190377f4607a6dd539d31be9b56d163b163ae347b7ad30d4f"
     lines: 9818
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/2026-09-07-claude-code-website-design-and-english-translation.md"
     sha256: "f69bdecf581a0b0b417f292524b1d0679f923c799b25e4d1a7678d2e9b7ccc08"
     lines: 1274
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/2026-09-08-codex-group-photo-and-story-workflow.md"
     sha256: "38875548951da5e6a67dcdc302ddf270ac1e5ea977fa9861e7a47eefc3cf3065"
     lines: 1254
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/2026-09-09-codex-project-skills-research-and-rename.md"
     sha256: "a34106608e219817e0cfe6a4c6e1a66c7c2c254978cec6aa7f7f2ce2ec175149"
     lines: 437
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/2026-09-09-codex-story-illustrations-and-inline-images.md"
     sha256: "9bad0451fc8630290d5903433dcfb1d63d4357ea7a04c92f49cd7d802bdc12b8"
     lines: 1214
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/ai-chat-history/meta-2026-09-07-claude-code-research-value-and-creative-identity.md"
     sha256: "e762dba17b0e2b7ef039bc8f4050cdc3143446d308eef5f2e59aa7fee9f1ee06"
     lines: 1432
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
   - path: "ResearchAssets/story-candidates/2026-09-09-r01"
     sha256: "852e0d45f7548d746d65c422aeabf3fc124315962d6fc102407dca703320b98b"
     lines: 6
-    consumed_on: "2026-09-09"
+    consumed_on: "2026-09-10"
+  - path: "ResearchAssets/story-candidates/2026-09-09-r02"
+    sha256: "3def8b65fb30a2a7fcbb7ac6abb0457ac1dba4bc18ed37952728042677e791e5"
+    lines: 9
+    consumed_on: "2026-09-10"
 
 rules:
   - id: "T001"
@@ -68,7 +72,7 @@ rules:
     scope: "qc-kindergarten.story_visual"
     confidence: "repeated"
     evidence: ["E010", "E013"]
-    counterexamples: []
+    counterexamples: ["E025"]
   - id: "T005"
     rule: "Prefer concrete recurring props and details that can return later with changed meaning."
     scope: "qc-kindergarten.story_visual"
@@ -164,3 +168,17 @@ rules:
     counterexamples: []
     open_question: "Only the lower bound is evidenced - too everyday gets rejected. Nothing in the corpus shows QC rejecting a premise for being too far out, so the ceiling is unmapped. Same gap as T016, and both rules push the same direction. Record the first rejected absurd premise as a priority."
     note: "Neither half stands alone. Without the first sentence the profile produces slice-of-life, which is what happened in round r01: six outlines executed T001 and T002 well and were rejected 6/6. Without the second sentence this collides with T002 and with the boundary against spectacle that has no character cause."
+  - id: "T020"
+    rule: "RETIRED before it was ever applied. Proposed 2026-09-10 as 'a forced form never lowers the mind'; QC approved the substance but ruled it stays in Haide's bible as canon rather than entering the profile. One character is not a pattern."
+    scope: "canon"
+    confidence: "retired"
+    evidence: []
+    counterexamples: []
+    note: "Kept as a record so the id is never reused and the decision is not re-litigated. The rule itself lives in character reference/Haide-entp/性格设定.md."
+  - id: "T021"
+    rule: "Length is not a virtue. Write the shortest version that lands; a story that fills the ceiling usually means something that should have been cut was not - over-explaining, unpacking the joke, or putting the whole cast in one scene."
+    scope: "qc-kindergarten.prose"
+    confidence: "repeated"
+    evidence: ["E025", "E027"]
+    counterexamples: []
+    note: "The accepted set runs 387-517 characters with one 2086-character ensemble outlier; the median is 488. QC set the generated ceiling at the longest accepted plus 200."

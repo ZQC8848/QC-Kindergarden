@@ -1,6 +1,6 @@
 # story_pipeline
 
-四模型并行写短篇故事 → QC 盲评裁决 → 选中的进入成稿。设计与理由见
+四模型并行出故事大纲 → QC 盲评裁决 → 选中的进入成稿。设计与理由见
 [`docs/2026-09-09-story-pipeline-design.md`](../../docs/2026-09-09-story-pipeline-design.md)，
 本文只讲怎么跑。
 
@@ -11,7 +11,7 @@
 python tools/story_pipeline/brief.py --slots            # 五个位子分别是什么
 python tools/story_pipeline/brief.py --slot escalation  # 完整 brief
 
-# 2. 生成（四个模型 × 四个位子 + 一个扩展位 = 17 次调用，几分钟）
+# 2. 生成（四个模型 × 四个位子 + 一个扩展位 = 17 次调用）
 python tools/story_pipeline/run_round.py
 python tools/story_pipeline/run_round.py --models kimi,deepseek   # 只用其中几个
 python tools/story_pipeline/run_round.py --no-taste               # 消融组
@@ -22,7 +22,7 @@ python tools/story_pipeline/publish.py
 
 # 4. 盲评：列出待裁决的故事，不显示模型名
 python tools/story_pipeline/review.py
-python tools/story_pipeline/review.py --show c-a7f3      # 读全文
+python tools/story_pipeline/review.py --show c-a7f3      # 单看一条
 
 # 5. 逐条裁决
 python tools/story_pipeline/review.py c-a7f3 select
@@ -58,7 +58,9 @@ r01 问的是「把这三个人放进这个房间会发生什么」——那是�
 
 **CLI 必须在干净目录里跑，且 brief 走 stdin。** 前者因为 Claude Code 和 Codex 会读工作目录的 `AGENTS.md`——在仓库里跑等于偷偷多喂整个项目，而 HTTP 那两个只看得到 brief，四个输入不再可比且不报错。后者因为 Windows 命令行上限 32767 字符而 brief 约 36000 字节，当参数传会直接失败或截断。
 
-**长度上限 2286 字，但上限不是目标。** 已定稿六篇里五篇在 387–517 字之间，中位数 488；唯一的长篇《四大魔女》2086 字是十二人群像的特例。r02 取消限制后中位数跳到 2354、最长 4895，整轮被否。`store.MAX_STORY_CHARS` 是唯一定义处，`run_round.py` 与 `review.py` 都会标出超限的篇目。
+**这一步只出大纲，上限 200 字。** r02 试过让模型写完整短篇，产出 817–4895 字，整轮被否——既读不动，也不是这一步该做的事。正文由后面的环节统一执笔，这里要挑的是**值得被写成故事的前提**。
+
+两个上限是分开的，不要合并：`MAX_OUTLINE_CHARS = 200` 管生成阶段的大纲，`MAX_PROSE_CHARS = 2286` 管成稿正文（已定稿最长篇 2086 + 200，其余五篇 387–517、中位数 488）。测试钉住了这两个数不能被合并。超限只标记不拒收——多几个字但确实好的大纲仍然该送到 QC 面前。
 
 **`stands_beside` 不是 `differs_from`。** r01 用的是「这条和哪篇最接近，区别在哪」，模型全都通过"更小、更静、更少人物"来达成区别——那是最便宜的差异化方式，而且**正在制造寡淡**。现在问的是「凭什么配站在那一篇旁边」，并明确写了不要靠写得更小来制造区别。
 

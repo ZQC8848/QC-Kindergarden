@@ -49,11 +49,17 @@ REASONS = {
 
 MAX_REVISITS = 3
 
-# Length ceiling for a generated story, in non-whitespace characters. Derived from the
-# accepted set: the longest, 《幼儿园四大魔女》, is 2086, and QC set the cap at that plus
-# 200. It is a ceiling and not a target — the other five accepted stories run 387 to 517.
-# r02 was written with no cap at all and produced 817 to 4895; the whole round was cut.
-MAX_STORY_CHARS = 2286
+# Two different ceilings, deliberately separate.
+#
+# The pipeline generates outlines, and an outline is capped hard at 200 non-whitespace
+# characters: r02 asked for full prose and the round came back at 817-4895 characters,
+# which was both unreadable at review scale and the wrong unit of work.
+#
+# The prose ceiling is what a *finished* story may run to once it is drafted elsewhere -
+# the longest accepted story (《幼儿园四大魔女》, 2086) plus 200. It is recorded here
+# because taste rule T021 refers to it, not because this module enforces it.
+MAX_OUTLINE_CHARS = 200
+MAX_PROSE_CHARS = 2286
 
 # Written when a round is cut because the rules it was produced under have since changed,
 # rather than because each story failed on its own. Keeping these apart matters: they are
@@ -63,11 +69,12 @@ MAX_STORY_CHARS = 2286
 
 @dataclass
 class Candidate:
-    """One generated story. Candidates carry full prose now, not an outline.
+    """One generated candidate: a premise and the outline of what happens.
 
-    Round r01 asked for one-line hooks and got premises to match: a container that holds
-    one sentence rewards a premise that fits in one sentence. The story body lives in the
-    markdown, everything sortable lives in the frontmatter.
+    The outline body lives in the markdown, everything sortable lives in the frontmatter.
+    Prose is not generated here — the pipeline picks premises, and the chosen ones get
+    drafted separately, so what has to be judged at this stage is whether the premise is
+    worth writing at all.
     """
     id: str
     round: str
@@ -83,7 +90,7 @@ class Candidate:
     stands_beside: str = ''        # why it earns its place next to that one
     residue: str = ''              # what this story leaves permanently changed
     new_elements: object = 'none'
-    story: str = ''                # the prose itself
+    outline: str = ''              # what happens, at most MAX_OUTLINE_CHARS
     verdict: str = 'pending'
     reason: str | None = None
     notes: str | None = None
@@ -96,8 +103,11 @@ class Candidate:
         return CANDIDATES / self.round / f'{self.id}.md'
 
     def words(self) -> int:
-        """Rough length. CJK has no spaces, so count characters and ignore markup."""
-        return len(re.sub(r'\s+', '', self.story))
+        """Rough length. CJK has no spaces, so count characters and ignore whitespace."""
+        return len(re.sub(r'\s+', '', self.outline))
+
+    def over_limit(self) -> bool:
+        return self.words() > MAX_OUTLINE_CHARS
 
 
 def new_id() -> str:
@@ -137,7 +147,7 @@ def write(c: Candidate) -> Path:
     for label, value in (('Premise', c.premise_line), ('Stands beside', c.stands_beside), ('Residue', c.residue)):
         if value:
             lines += [f'**{label}**　{value}', '']
-    lines += ['---', '', c.story.strip(), '']
+    lines += ['---', '', c.outline.strip(), '']
     if c.parse_failed and c.raw:
         lines += ['<details><summary>无法解析的模型原始输出</summary>', '', '```', c.raw.strip()[:20000], '```', '', '</details>', '']
     p.write_text('\n'.join(lines), encoding='utf-8', newline='\n')
@@ -175,7 +185,7 @@ def read(path: Path) -> Candidate:
     data['residue'] = _field(body, 'Residue')
     # The prose is everything after the horizontal rule that closes the metadata block.
     parts = re.split(r'^---\s*$', body, flags=re.M)
-    data['story'] = parts[-1].split('<details>')[0].strip() if len(parts) > 1 else ''
+    data['outline'] = parts[-1].split('<details>')[0].strip() if len(parts) > 1 else ''
     data['raw'] = (re.search(r'```\n(.*?)\n```', body, re.S) or [None, ''])[1]
     known = {f for f in Candidate.__dataclass_fields__}
     return Candidate(**{k: v for k, v in data.items() if k in known})

@@ -73,7 +73,7 @@ class Verdicts(unittest.TestCase):
     def make(self, **kw) -> store.Candidate:
         c = store.Candidate(
             id=kw.pop('id', store.new_id()), round='r-test', slot='baseline', model='kimi',
-            taste_context='on', title='T', story='正文。', kind='memory', cast=['haide'],
+            taste_context='on', title='T', outline='大纲。', kind='memory', cast=['haide'],
             location='Courtyard', **kw,
         )
         store.write(c)
@@ -147,29 +147,46 @@ class RoundTrip(unittest.TestCase):
             nearest='2026-09-08-four-witches', stands_beside='它把移植当成了证词而不是造型',
             residue='从此开庭前要先摇铃',
             new_elements=[{'guest': 'Mimi 的姐姐', 'why': '需要一个成年人'}],
-            story='# 开庭\n\n"全体起立。"\n\n没有人起立。',
+            outline='开庭。全体起立，没有人起立。',
             verdict='shortlisted', revisit_count=2,
         )
         store.write(c)
         back = store.read(c.path())
         for f in ('id', 'slot', 'model', 'taste_context', 'title', 'premise_line', 'kind',
                   'cast', 'location', 'nearest', 'stands_beside', 'residue', 'new_elements',
-                  'verdict', 'revisit_count'):
+                  'outline', 'verdict', 'revisit_count'):
             self.assertEqual(getattr(back, f), getattr(c, f), f)
 
-    def test_the_prose_survives_intact(self):
-        # The story body is the deliverable now; losing a line of it to the frontmatter
-        # parser would be invisible until someone read the file.
-        body = '# 标题\n\n第一段，带 --- 这样的破折号。\n\n"对白。"\n\n最后一行。'
+    def test_the_outline_survives_intact(self):
+        # Losing a line of it to the frontmatter parser would be invisible until someone
+        # opened the file, so the round trip is pinned.
+        body = '第一句，带 --- 这样的破折号。\n\n第二句。'
         c = store.Candidate(id='c-0001', round='r-test', slot='consequence', model='kimi',
-                            taste_context='on', title='T', story=body)
+                            taste_context='on', title='T', outline=body)
         store.write(c)
-        self.assertEqual(store.read(c.path()).story, body)
+        self.assertEqual(store.read(c.path()).outline, body)
 
     def test_length_is_counted_ignoring_whitespace(self):
         c = store.Candidate(id='c-0002', round='r-test', slot='consequence', model='kimi',
-                            taste_context='on', title='T', story='一二三\n\n四五')
+                            taste_context='on', title='T', outline='一二三\n\n四五')
         self.assertEqual(c.words(), 5)
+
+    def test_the_outline_ceiling_is_flagged_not_enforced(self):
+        # The cap is a review signal, not a hard reject: an outline a few characters over
+        # that is otherwise excellent should still reach QC, marked.
+        ok = store.Candidate(id='c-0003', round='r-test', slot='consequence', model='kimi',
+                             taste_context='on', title='T', outline='一' * store.MAX_OUTLINE_CHARS)
+        over = store.Candidate(id='c-0004', round='r-test', slot='consequence', model='kimi',
+                               taste_context='on', title='T', outline='一' * (store.MAX_OUTLINE_CHARS + 1))
+        self.assertFalse(ok.over_limit())
+        self.assertTrue(over.over_limit())
+
+    def test_the_two_ceilings_are_separate(self):
+        # 200 is what a generated outline may run to; 2286 is what a finished story may
+        # run to. Collapsing them would quietly let 2000-character outlines back in.
+        self.assertEqual(store.MAX_OUTLINE_CHARS, 200)
+        self.assertEqual(store.MAX_PROSE_CHARS, 2286)
+        self.assertLess(store.MAX_OUTLINE_CHARS, store.MAX_PROSE_CHARS)
 
     def test_stats_counts_by_model_and_computes_accept_rate(self):
         for i, (model, verdict, reason) in enumerate([
@@ -181,7 +198,7 @@ class RoundTrip(unittest.TestCase):
         ]):
             c = store.Candidate(
                 id=f'c-{i:04d}', round='r-test', slot='baseline', model=model,
-                taste_context='on', title='T', story='正文。', kind='memory',
+                taste_context='on', title='T', outline='大纲。', kind='memory',
             )
             store.write(c)
             store.decide(c, verdict, reason=reason, notes='n' if verdict == 'selected_with_notes' else None, now=NOW)
@@ -244,10 +261,11 @@ class Brief(unittest.TestCase):
             self.assertNotIn('必须引入一个临时客串角色', brief_mod.build(taste=False, slot=slot), slot)
         self.assertIn('必须引入一个临时客串角色', brief_mod.build(taste=False, slot='expansion'))
 
-    def test_full_stories_are_requested_not_outlines(self):
+    def test_outlines_are_requested_not_prose(self):
         text = brief_mod.build(taste=False, slot='contradiction')
-        self.assertIn('写完整的短篇故事，不是大纲', text)
-        self.assertIn('`story`', text)
+        self.assertIn('这一步只写大纲，不写正文', text)
+        self.assertIn('`outline`', text)
+        self.assertIn(str(store.MAX_OUTLINE_CHARS), text)
 
     def test_dedup_field_does_not_reward_shrinking(self):
         # r01's `differs_from` was answered by being smaller and quieter than the good

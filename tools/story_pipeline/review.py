@@ -49,7 +49,7 @@ def find(cid: str) -> store.Candidate:
 
 
 def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
-    over = ' ⚠超上限' if c.words() > store.MAX_STORY_CHARS else ''
+    over = ' ⚠超上限' if c.over_limit() else ''
     print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()} 字{over}')
     if not blind:
         print(f'  model: {c.model}  taste: {c.taste_context}  slot: {c.slot}')
@@ -65,9 +65,9 @@ def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
         print(f'  残留  {c.residue}')
     if c.new_elements not in ('none', None, [], ''):
         print(f'  新元素 {c.new_elements}')
-    if full and c.story:
+    if c.outline:
         print()
-        for line in c.story.splitlines():
+        for line in c.outline.splitlines():
             print(f'  {line}')
     if c.verdict != 'pending':
         tail = f' ({store.REASONS.get(c.reason, c.reason)})' if c.reason else ''
@@ -94,8 +94,6 @@ def main() -> int:
         return 0
 
     if args.show:
-        # The full prose. Stories are long now, so the list view stays a summary and this
-        # is how one gets read end to end.
         show(find(args.show), blind=True, full=True)
         return 0
 

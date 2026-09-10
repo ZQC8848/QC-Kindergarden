@@ -150,17 +150,15 @@ def embed_for(c: store.Candidate) -> dict:
 
 
 def publish(c: store.Candidate, url: str, dry: bool) -> int:
-    """One story: a metadata embed, then the prose. Returns messages sent."""
-    post(url, {'embeds': [embed_for(c)]}, dry)
-    sent = 1
-    parts = chunks(c.story) if c.story else ['（无正文）']
-    for i, part in enumerate(parts):
-        tail = f'\n\n*—— {c.id} ({i + 1}/{len(parts)})*' if len(parts) > 1 else ''
-        if not dry:
-            time.sleep(THROTTLE)
-        post(url, {'content': part + tail}, dry)
-        sent += 1
-    return sent
+    """One candidate, one message. Returns messages sent.
+
+    An outline of at most 200 characters fits in the embed's description, so a candidate
+    no longer needs the follow-up messages that full prose required.
+    """
+    embed = embed_for(c)
+    embed['description'] = clip(c.outline or '（无大纲）', 4000)
+    post(url, {'embeds': [embed]}, dry)
+    return 1
 
 
 def main() -> int:
