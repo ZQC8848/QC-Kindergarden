@@ -16,17 +16,21 @@ python tools/story_pipeline/run_round.py
 python tools/story_pipeline/run_round.py --models kimi,deepseek   # 只用其中几个
 python tools/story_pipeline/run_round.py --no-taste               # 消融组
 
-# 3. 盲评：列出待裁决的故事，不显示模型名
+# 3. 推到 Discord 评审频道（一篇一帖，不显示模型名）
+python tools/story_pipeline/publish.py --dry-run     # 先看排版
+python tools/story_pipeline/publish.py
+
+# 4. 盲评：列出待裁决的故事，不显示模型名
 python tools/story_pipeline/review.py
 python tools/story_pipeline/review.py --show c-a7f3      # 读全文
 
-# 4. 逐条裁决
+# 5. 逐条裁决
 python tools/story_pipeline/review.py c-a7f3 select
 python tools/story_pipeline/review.py c-b1e9 discard --reason too_everyday
 python tools/story_pipeline/review.py c-c4d2 shortlist
 python tools/story_pipeline/review.py c-d0f1 revise --notes "把结尾收短"
 
-# 5. 全部裁决完之后，才揭晓每个模型的表现
+# 6. 全部裁决完之后，才揭晓每个模型的表现
 python tools/story_pipeline/review.py --stats
 ```
 
@@ -44,7 +48,9 @@ r01 问的是「把这三个人放进这个房间会发生什么」——那是�
 
 每轮 = 4 模型 × 4 个基础位 + 1 个扩展位 = **17 篇**。同一个位子，四个模型收到的 brief 逐字节相同——这是唯一的受控变量。
 
-## 四条不要绕过的约束
+## 五条不要绕过的约束
+
+**只用 webhook，不做 bot。** webhook 只写不读，裁决收不回来——读在 Discord，判在终端。每轮第一条消息附可复制的命令，每篇 footer 带 id。发送用 `urllib` 时必须带 `User-Agent`：Cloudflare 对默认的 `Python-urllib/3.x` 直接回 403，而隔壁 `discord-notify` 用 `requests` 所以从没撞上。
 
 **盲评在裁决完成前不揭晓模型。** `--stats` 在还有 `pending` 时会拒绝执行。知道作者是谁会把偏好变成习惯，同时毁掉选择本身和 per-model 数据。
 
@@ -62,7 +68,8 @@ r01 问的是「把这三个人放进这个房间会发生什么」——那是�
 | `adapters.py` | 四个模型统一成 `generate(brief) -> str`；容错的 JSON 解析 |
 | `store.py` | 候选文件读写、裁决状态机、备选池衰减、per-model 统计 |
 | `run_round.py` | 编排一轮，写 `round.json`（含每个位子的 brief sha256） |
-| `review.py` | 终端盲评，Discord bot 的替身 |
+| `publish.py` | 把一轮推到 Discord 评审频道，一篇一帖 |
+| `review.py` | 终端盲评与裁决 |
 | `test_pipeline.py` | 32 个用例，`python tools/story_pipeline/test_pipeline.py` |
 
 候选数据落在 **私有子模块** `ResearchAssets/story-candidates/<轮次>/`——里面是 QC 对朋友虚拟分身的原始否决理由。选定的故事才毕业到公开仓库的 `stories/`。

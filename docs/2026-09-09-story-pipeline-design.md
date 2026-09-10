@@ -19,7 +19,7 @@
 一轮的规模因此从 13 变成 **17**（4 模型 × 4 个基础位 + 1 个扩展位）。
 
 **实现状态（2026-09-09 更新）**：第 1–4 步与终端盲评已实现，见
-[`tools/story_pipeline/`](../tools/story_pipeline/README.md)。Discord bot 与成稿衔接未做。
+[`tools/story_pipeline/`](../tools/story_pipeline/README.md)。Discord 推送用 webhook 已实现，成稿衔接未做。
 `--dry-run` 已跑通完整回路（13 次调用 → 13 份候选 → 盲评裁决 → 揭晓 per-model 统计），
 25 个单元测试全部通过。四个 adapter 代码就绪但当前均不可用：两个缺 API key，
 两个 CLI 不在本机 PATH 上。
@@ -150,31 +150,28 @@ HTTP 两个可并发；CLI 两个串行，每次要启动 agent 循环，单次�
 
 事后照样能统计每个模型的采纳率——但那个数字这时候才是干净的。
 
-### Bot 而非 webhook
+### webhook，不做 bot（2026-09-09 改定）
 
-**incoming webhook 是只写的，读不到 reaction。** 要收 emoji 裁决必须升级成 bot token。现有 `discord-notify` skill 的 webhook 保留，继续用于"新故事上线"通知；这条流水线用独立的 bot。
+原方案是升级成 bot、用 emoji reaction 收裁决。**已放弃。** 现在只用 incoming webhook 单向推送：`tools/story_pipeline/publish.py` 把每轮故事发进评审频道，**一篇一帖**；裁决回到终端用 `review.py`。
+
+这是一次自觉的降级，代价要说清楚：**webhook 只写不读，裁决收不回来**，于是读在 Discord、判在终端，需要把 id 带过去。换来的是少一个要建也要维护的组件。为压低这个摩擦，每轮第一条消息直接附上可复制的裁决命令，每篇 footer 带 id。
+
+排版按 Discord 的硬限制来：一条消息 2000 字符、embed description 4096、embed field 1024。所以每篇是**一个元数据 embed**（标题、类型、地点、长度、出场、前提、比照、残留、新元素）**加上按空行切分的若干条正文消息**，记忆事件与番外用不同颜色。
+
+**embed 里不出现模型名**——盲评在这里同样成立。`slot` 会显示，因为它说明这篇被要求写成什么，属于公平阅读的一部分。
 
 ### 四类裁决
 
-| Emoji | 去向 | 需要打字 |
-|---|---|---|
-| 🗑️ | 丢弃 → 研究库 | 否，但需二次点选理由 |
-| 📥 | 备选池 | 否 |
-| ✅ | 选定 | 否 |
-| ✏️ | 选定待改 | 是，写修改建议 |
+在终端执行。`review.py` 强制两条：丢弃必须带理由；`--stats` 在还有 pending 时拒绝揭晓模型。
 
-**丢弃理由的采集方式**：主消息只挂 4 个裁决 emoji，保持清爽。一旦 🗑️ 被点，Bot 在该消息的 thread 里回一条带 6 个理由 emoji 的消息，等第二次点击。
+| 命令 | 去向 |
+|---|---|
+| `discard --reason X` | 丢弃 → 研究库 |
+| `shortlist` | 备选池 |
+| `select` | 选定 |
+| `revise --notes "..."` | 选定待改 |
 
-丢弃两次点击，其余一次。
-
-理由集（先用这 6 个，跑几轮后按实际分布调整）：
-
-- `不像这个角色`
-- `梗太老`
-- `太温和`
-- `没有因果`
-- `和已有故事重复`
-- `就是不好笑`
+理由集见 `store.REASONS`，r01 之后按 QC 的实际用词重写过一次。
 
 **理由是强制的。** 没有理由的废稿，半年后 QC 自己也说不出当初为什么不要——研究库就变成一片坟场。带标签的否决样本才是这条流水线对 `qc-taste` 最大的贡献。
 
@@ -283,7 +280,7 @@ revisit_count: 0
 decided_at: null
 ```
 
-密钥沿用现有位置：Kimi / DeepSeek token 进根目录 `.env`（已 gitignore），Discord bot token 进 `ResearchAssets/config/notify.env`。两个 CLI 不需要 key，用已登录的订阅态。
+密钥沿用现有位置：Kimi / DeepSeek token 进根目录 `.env`（已 gitignore），Discord webhook 进 `ResearchAssets/config/story-pipeline.env`（评审频道，与 `notify.env` 的公开通知分开）。两个 CLI 不需要 key，用已登录的订阅态。
 
 ## 八、每轮记什么
 
@@ -322,7 +319,7 @@ Codex 与 Claude 走订阅，不额外花钱，但**有速率限制，批量自�
 2. 两个 HTTP adapter —— 先只用 Kimi + DeepSeek 跑通生成与落盘
 3. 候选库格式与状态机（纯文件操作，无外部依赖）
 4. 两个 CLI adapter
-5. Discord bot：发布 + 裁决回收
+5. Discord 推送（webhook 单向；裁决留在终端）
 6. 成稿衔接与统计
 
-第 1–3 步做完就已经能手动跑一轮了；第 5 步之前用手工编辑 frontmatter 代替 emoji 裁决，先验证生成质量值不值得为它写 bot。
+第 1–3 步做完就已经能手动跑一轮了。第 5 步最终没有做成 bot：跑过两轮之后判断，收裁决的那半边不值得为它维护一个 bot，读稿这半边一个 webhook 就够。
