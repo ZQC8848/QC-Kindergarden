@@ -7,3 +7,7 @@ src/assets/scenes/
 src/assets/group-photo.png
 src/data/characters.json
 src/data/stories.json
+.vercel/
+
+.vercel
+.env*

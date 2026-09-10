@@ -267,27 +267,23 @@ p {
   border: 0;
 }
 
-/* scroll reveal, CSS only, off under reduced motion */
-@media (prefers-reduced-motion: no-preference) {
-  .reveal {
-    opacity: 0;
-    transform: translateY(14px);
-    animation: reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    animation-timeline: view();
-    animation-range: entry 0% entry 28%;
-  }
-  @supports not (animation-timeline: view()) {
-    .reveal {
-      opacity: 1;
-      transform: none;
-      animation: none;
-    }
-  }
+/* Scroll reveal: Base.astro adds .is-in when an element enters the viewport.
+   (A CSS-only view() timeline was used before, but the minifier rewrote
+   `animation-range: entry 0% entry 28%` into an invalid value, leaving cards invisible in production.) */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
 }
-
-@keyframes reveal {
-  to {
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
     opacity: 1;
     transform: none;
+    transition: none;
   }
 }

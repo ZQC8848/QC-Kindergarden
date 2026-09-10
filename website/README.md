@@ -40,7 +40,20 @@ npm run build    # 输出到 dist/
 
 ## 部署
 
-Vercel 项目的 Root Directory 设为 `website`，Framework Preset 选 Astro，其余默认。
+线上地址 https://qc-kindergarten.vercel.app ，Vercel 项目 `zqc8848s-projects/qc-kindergarten`。
+
+不用 Git 集成，用本地构建再上传（prebuilt）：同步脚本要读 `website/` 上一级的角色、故事和场景文件，Vercel 只上传 Root Directory 的话读不到；仓库还带私有 submodule，云端克隆会出问题。流程：
+
+```bash
+cd website
+npx vercel login                                   # 第一次
+npx vercel link --yes --project qc-kindergarten    # 第一次，生成 .vercel/（已 gitignore）
+npx vercel pull --yes --environment production
+npx vercel build --prod --yes
+npx vercel deploy --prebuilt --prod
+```
+
+`vercel build` 会在本地重新跑 `npm install`。如果用户级 `~/.npmrc` 里有 `allow-scripts=…`，npm 11 会报 `EALLOWSCRIPTS`；构建时让 npm 忽略用户级配置即可：`npm_config_userconfig=<空文件路径> npx vercel build --prod --yes`（PowerShell：`$env:npm_config_userconfig="<空文件路径>"`）。
 
 ## 还没做的（对应 DESIGN.md 待办）
 

@@ -41,7 +41,8 @@ out = {
             "character bibles. Before you end this turn, use AskUserQuestion to ask the user whether "
             "the new settings in this story should be merged into the relevant characters' "
             "`character reference/<角色>/性格设定.md` (list which characters and what would change). "
-            "Only edit the bibles if the user answers yes."
+            "Only edit the bibles if the user answers yes. Once the story is final and deployed, offer to "
+            "announce it with the discord-notify skill (.agents/skills/discord-notify/SKILL.md)."
         ),
     },
 }

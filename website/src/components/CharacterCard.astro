@@ -67,7 +67,7 @@ const href = `/${lang}/characters/${c.slug}/`;
     overflow: hidden;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
     box-shadow: var(--shadow-sm);
-    animation-delay: calc(var(--i) * 40ms);
+    --reveal-delay: calc(var(--i) * 40ms);
   }
   .card:hover {
     transform: translateY(-4px);

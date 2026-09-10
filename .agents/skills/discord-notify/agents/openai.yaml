@@ -1,0 +1,4 @@
+interface:
+  display_name: "Discord 通知"
+  short_description: "新故事或新插图上线后，通过 webhook 发一条不剧透的更新通知到 Discord 频道"
+  default_prompt: "Use $discord-notify: run the dry run to see which stories or illustrations have not been announced, write a spoiler-free one-line teaser for each new story, make sure the pages are live, then post to the Discord webhook and tell me what was sent."

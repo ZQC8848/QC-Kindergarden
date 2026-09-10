@@ -31,6 +31,7 @@ memories:                       # 仅 memory 使用，key 推荐写稳定 slug
 ```
 
 - `date` 是创作日期，`timeline` 才是世界观内的先后顺序。
+- 可选字段 `teaser: 一句不剧透的话`，Discord 通知会优先用它；没有就取正文第一句。
 - 英文版放在同名的 `<故事文件名>.en.md`：frontmatter 只写 `title`、`framing`（番外）和 `memories`（每个角色的 `title` / `summary` / `impact`），`cast`、`location`、`date`、`type`、`timeline` 沿用中文文件；正文翻译后保留 `<!-- illustration:N|英文说明 -->` 标记。翻译规范见 `.agents/skills/translate-en/SKILL.md`。
 - `cast` 表示与故事有关、可用于筛选的角色；`memories` 表示真正拥有该段记忆的角色，两者不必相同。
 - 故事产生的长期性格变化可以回写 bible，但不要把完整事件重复复制过去。旧的重复段落可保留为 `## 事件档案（已迁移）`，网站不会再把它当补充设定显示。

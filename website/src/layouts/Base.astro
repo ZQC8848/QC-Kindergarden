@@ -24,6 +24,10 @@ const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};`
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -46,6 +50,54 @@ const style = accent ? `--accent:${accent};--accent-ink:${accentInk ?? accent};`
       <slot />
     </main>
 
+    <noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
+    <script>
+      // Reveal-on-scroll for .reveal elements. IntersectionObserver is the primary trigger;
+      // a rect check on scroll/resize/load is the fallback so nothing can stay invisible.
+      const pending = new Set<HTMLElement>(document.querySelectorAll<HTMLElement>('.reveal'));
+      const show = (el: HTMLElement) => {
+        el.classList.add('is-in');
+        pending.delete(el);
+      };
+      const inView = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return r.bottom > 0 && r.top < window.innerHeight * 0.92;
+      };
+      let queued = false;
+      const check = () => {
+        queued = false;
+        pending.forEach((el) => inView(el) && show(el));
+        if (pending.size === 0) {
+          window.removeEventListener('scroll', schedule);
+          window.removeEventListener('resize', schedule);
+        }
+      };
+      const schedule = () => {
+        if (!queued) {
+          queued = true;
+          // setTimeout rather than requestAnimationFrame: rAF is paused in background tabs.
+          setTimeout(check, 40);
+        }
+      };
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                show(entry.target as HTMLElement);
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
+        );
+        pending.forEach((el) => io.observe(el));
+      }
+      window.addEventListener('scroll', schedule, { passive: true });
+      window.addEventListener('resize', schedule, { passive: true });
+      window.addEventListener('load', schedule);
+      check();
+    </script>
     <footer class="footer">
       <div class="wrap footer-inner">
         <p>{s.siteName}. {s.footer}</p>
