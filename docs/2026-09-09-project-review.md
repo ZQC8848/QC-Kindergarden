@@ -8,7 +8,7 @@
 |---|---|---|
 | 架构清晰度 | 3.5 | 内容 / 网站 / 研究三层分离和"单一数据源"落实得好；双 agent 生态重复、命名残留、真源规则没执行到底 |
 | 代码质量 | 3.5 → 已整改 | 网站与脚本职责清楚、有注释；类型检查有 2 个错误被 build 掩盖，UI 片段重复，风格在两个 AI 的提交之间已不一致。2026-09-09 全部处理，见文末执行记录 |
-| 可维护性 | 2.5 | 没有 CI、没有测试、没有 schema 校验；素材全量入库，仓库会持续膨胀；文档已有 4 处漂移 |
+| 可维护性 | 2.5 → 已整改 | 没有 CI、没有测试、没有 schema 校验；素材全量入库，仓库会持续膨胀；文档已有 4 处漂移。2026-09-09 处理，见文末执行记录 |
 
 验证过的事实：`npm run build` 通过，63 页，4.5 秒；`astro check` 2 错 0 警 2 提示；`audit_en.py` 通过；仓库 pack 60 MB，工作区素材约 310 MB。
 
@@ -48,7 +48,7 @@
 3. **frontmatter 无校验。** `type` 拼错会静默变成 `memory`；`knowledge` 写了非法值会原样进 JSON；`location` 未知只 warn。
 4. **仓库体积。** 所有 PNG 直接入 git，pack 已 60 MB；`stories/README.md` 规定"所有版本都留着"，加上 4K 版本，每个故事会带 5 到 8 张 2 到 8 MB 的图；`website/group-photo/work/` 另有 27 MB 无人引用的过程稿。（更正：早先写的"重命名让同一张图存了两份"不成立，实测 `FUFU→Fufu` 是 `R100` 纯重命名，blob 唯一。）
 5. **文档漂移**（4 处）：`website/README.md` 页面列表没有 places 页；`DESIGN.md` 待办第 6 条"英文翻译"已完成未勾；第 4 层"环境全景"描述与现状（房间页 + 平面图）不符；`website/group-photo/composition.json` 与 `GROUP-PHOTO.md` 引用的 `work/background-16x9-v1.png`、`work/concept-v1.png`、`identity-sheet.png` 三个文件均已不存在。
-6. **hook 成本。** `check_bilingual_consistency` 在每次写 bible / 故事 / i18n 时跑完整审计（上限 30 秒）。目前 12 角色 6 故事还快，规模翻倍后会明显拖慢编辑。
+6. ~~**hook 成本。**~~ **这条不成立。** 实测 `tools/audit_en.py` 完整跑一遍 140 毫秒（12 角色 6 故事，三次取样 137 / 140 / 151 ms）。就算内容翻十倍也只有 1.4 秒，30 秒的超时是安全网而不是常态。原判断是看代码估的，没有实测。
 
 ## 代码质量整改执行记录（2026-09-09）
 
@@ -72,6 +72,33 @@
 
 **未做**：CI（GitHub Actions）与单元测试，属可维护性一组。
 
+## 可维护性整改执行记录（2026-09-09）
+
+| 原问题 | 处理 |
+|---|---|
+| 没有 CI | 新增 `.github/workflows/ci.yml`：push 与 PR 上跑 `npm ci` → `npm test` → `npm run verify`（sync / prettier / astro check / build）→ `tools/audit_en.py --dist` → `tools/skill_stubs.py`。不 checkout 私有 submodule。Vercel 继续只负责部署 |
+| 没有测试 | 把 sync 脚本里的纯解析函数抽到 `website/scripts/parse.mjs`（脚本从 341 行降到 214 行），新增 `parse.test.mjs`，26 个用例覆盖 `resolveSlug`、`memoryEntries`、`parseStoryContent`、`excerptOf`、`latestVersionOf`、`latestIllustrationsOf`、`linkNames`、`canonTitle`、`parseBible`。`npm test` 跑 `node --test`。抽取前后 sync 产出的两个 JSON 逐字节相同 |
+| frontmatter 无校验 | 上一轮代码质量整改已做（zod schema） |
+| 仓库体积 | 删掉 11 个被取代的旧版图片，共 27.8 MB（故事插画 7 个、陆姚三视图 v1、客串角色三视图 v1 v2、QC 道具图 v1）。`stories/README.md` 的"所有版本都留着"改成"定稿后删掉被取代的旧版本"。**但见下方的重要说明** |
+| 文档漂移 | 4 处全部修完：`website/README.md` 补 `/zh/places/<slug>/`；`DESIGN.md` 首页第 4 层改成与现状一致（场景横滑 + 地点页 + 平面图），待办 6（英文翻译）标记完成，待办 9 措辞更正。另两处（GROUP-PHOTO.md 与 composition.json 的死引用）在架构整改时已修 |
+| hook 成本 | 判断不成立，见上文第 6 条 |
+
+### 关于"给 GitHub 留空间"：删文件不缩体积
+
+这次删掉的 27.8 MB **不会让 GitHub 上的仓库变小**。git 的历史里仍然保留着这些 blob，任何人 clone 都还会下载它们。当前打包体积 `size-pack` 是 **295 MB**，删除操作只是让它不再继续以这个速度增长。
+
+真要把已有体积降下来，只有一条路：`git filter-repo` 重写历史再强推。代价是所有已有 clone 作废、所有 commit 哈希改变、submodule 指针要重新对齐。这是一次性的破坏性操作，需要你单独拍板，我没有做。
+
+两个 4K 主文件（合照 9.8 MB、四大魔女插画 7.5 MB）是历史里最大的两个 blob。它们不被网站引用，但属于你明确要求生成的高分辨率成品，删掉也不会缩小已有体积，所以我保留了。要删随时说。
+
+### 过程中发现并修掉的问题
+
+**`tools/audit_en.py` 又一次静默失配。** 别名表 `SECTION_ALIASES` 随纯函数从 `sync-content.mjs` 搬到 `parse.mjs`，审计立刻报出 216 个假阳性。这已经是同一个脚本第三次因为"读别的文件的源码"而失配（前两次：prettier 去掉键引号、i18n 字典结构改变）。这次除了改指向，还给别名表加了和 i18n 检查一样的守卫：读不到就直接退出并说明原因，不再返回空表继续跑。
+
+**测试当场抓到我自己写错的期望。** 我断言 `description` 里应包含"和其他人的相处"，实际它是独立渲染的关系段，不在 `descriptionOrder` 里。测试第一次跑就红了。
+
+**验证**：`npm test` 26 通过；`npm run verify` 全绿 63 页；`tools/audit_en.py` 与 `tools/skill_stubs.py` 通过；`npm ci --dry-run` 确认 lock 与 package.json 一致（CI 用 `npm ci`）；删图后重跑 sync，12 个角色的三视图与表情表、13 张插图全部还在。
+
 ## 建议的处理顺序
 
 **P0（一小时内，零风险）**
@@ -87,11 +114,11 @@
 - ~~抽组件、`.notice` / `.crumbs` 进 `global.css`~~ 完成（`Notice` / `Crumbs` 用全局类而非组件，只有一个元素不值得包一层）。
 - ~~sync 脚本去重~~ 完成。
 - ~~prettier + editorconfig + npm 脚本~~ 完成。
-- GitHub Actions：push 时跑 `npm run verify` + `tools/audit_en.py` + `tools/skill_stubs.py`，Vercel 继续负责部署。**未做。**
-- `node:test` 给 `parseBible`、`parseStoryContent`、`resolveSlug` 各写 3 到 5 个用例。**未做。**
+- ~~GitHub Actions~~ 完成。
+- ~~`node:test` 用例~~ 完成，26 个。
 
 **P2（有空再做）**
-- 素材策略二选一：Git LFS 管所有 PNG；或者过程稿（`work/`、v1 到 v(n-1) 草稿）不入库，仓库只留最终版 + 4K。改 `stories/README.md` 的"所有版本都留着"。
+- ~~过程稿不入库，只留最终版 + 4K，并改 `stories/README.md`~~ 完成。剩下的选项是 Git LFS，或者用 `git filter-repo` 重写历史真正回收那 295 MB，都需要你拍板。
 - bible 里"事件档案（已迁移）"四段删掉，或压成一行"见 stories/xxx.md"。
 - `其他人物/` 改名 `_guests/`（去掉中文目录名）；要不要进 config 成为一等公民（`guest: true`，网站不列卡片但故事页可引用）另议。
 - 顶层目录去空格、统一英文：`content/characters`、`content/scenes`、`content/stories`。这是大改，配合一次 sync 脚本路径常量修改即可，但会让 git 历史里的重命名再多一轮，建议和 LFS 迁移一起做。

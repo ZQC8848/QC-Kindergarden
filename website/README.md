@@ -34,6 +34,7 @@ npm run build    # 输出到 dist/
 - `/zh/` `/en/`：首页四层（合照热区、角色卡、分为记忆事件与番外剧场的故事集、环境）
 - `/zh/characters/<slug>/`：角色页（立绘、口头禅、三视图折叠、补充设定、主观记忆、出演番外、关系）
 - `/zh/stories/<slug>/`：故事页；记忆事件附带多人物视角，番外明确标注不进入记忆
+- `/zh/places/<slug>/`：地点页；每个场景一页，列出在这里发生过的故事
 - 根路径跳 `/zh/`。英文页缺翻译时显示中文并标注
 
 英文 bible 放在 `character reference/<角色>/性格设定.en.md`，章节结构与中文一致、标题用 `scripts/sync-content.mjs` 里 `SECTION_ALIASES` 列出的英文名；故事的英文版放在 `stories/<故事>.en.md`，frontmatter 只需 `title`、`framing`、`memories`，正文保留插图标记。两者有了会自动被用上，缺失时英文页回退显示中文并标注。翻译工作流见 `.agents/skills/translate-en/`。

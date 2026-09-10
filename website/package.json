@@ -10,7 +10,8 @@
     "check": "astro check",
     "verify": "npm run sync && npm run format:check && npm run check && npm run build",
     "format": "prettier --write \"src/**/*.{astro,ts,css,mjs}\" \"scripts/*.mjs\" \"*.{json,mjs}\"",
-    "format:check": "prettier --check \"src/**/*.{astro,ts,css,mjs}\" \"scripts/*.mjs\" \"*.{json,mjs}\""
+    "format:check": "prettier --check \"src/**/*.{astro,ts,css,mjs}\" \"scripts/*.mjs\" \"*.{json,mjs}\"",
+    "test": "node --test"
   },
   "dependencies": {
     "astro": "^7.3.2",

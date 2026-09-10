@@ -15,8 +15,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import { marked } from 'marked';
-import { characters, descriptionOrder, nameToSlug, scenes } from '../src/data/characters.config.mjs';
+import { characters, scenes } from '../src/data/characters.config.mjs';
 import { CharactersSchema, StoriesSchema } from '../src/data/schema.ts';
+import {
+  excerptOf,
+  latestIllustrationsOf,
+  latestVersionOf,
+  memoryEntries,
+  parseBible,
+  parseStoryContent,
+  resolveSlug,
+} from './parse.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const site = path.resolve(here, '..');
@@ -39,85 +48,17 @@ function copyIfNewer(src, dst) {
   return true;
 }
 
+/** fs wrapper around latestVersionOf. */
 function latestVersion(dir, prefix, suffixRe) {
   if (!fs.existsSync(dir)) return null;
-  const hits = fs
-    .readdirSync(dir)
-    .map((f) => ({ f, m: f.match(new RegExp(`^${escapeRe(prefix)}${suffixRe}$`)) }))
-    .filter((x) => x.m)
-    .sort((a, b) => Number(b.m[1]) - Number(a.m[1]));
-  return hits.length ? path.join(dir, hits[0].f) : null;
+  const file = latestVersionOf(fs.readdirSync(dir), prefix, suffixRe);
+  return file ? path.join(dir, file) : null;
 }
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** fs wrapper around latestIllustrationsOf. */
 function latestIllustrations(dir, stem) {
   if (!fs.existsSync(dir)) return [];
-  const pattern = new RegExp(`^${escapeRe(stem)}-p(\\d+)-v(\\d+)\\.png$`);
-  const latestByPanel = new Map();
-  for (const file of fs.readdirSync(dir)) {
-    const match = file.match(pattern);
-    if (!match) continue;
-    const panel = Number(match[1]);
-    const version = Number(match[2]);
-    const current = latestByPanel.get(panel);
-    if (!current || version > current.version) {
-      latestByPanel.set(panel, { panel, version, src: path.join(dir, file) });
-    }
-  }
-  return [...latestByPanel.values()].sort((a, b) => a.panel - b.panel);
-}
-
-function parseStoryContent(body) {
-  const blocks = [];
-  const marker = /<!--\s*illustration:(\d+)\s*\|\s*(.*?)\s*-->/g;
-  let cursor = 0;
-  for (const match of body.matchAll(marker)) {
-    const markdown = body.slice(cursor, match.index).trim();
-    if (markdown) blocks.push({ type: 'html', html: marked.parse(markdown) });
-    blocks.push({ type: 'illustration', panel: Number(match[1]), title: match[2].trim() });
-    cursor = match.index + match[0].length;
-  }
-  const markdown = body.slice(cursor).trim();
-  if (markdown) blocks.push({ type: 'html', html: marked.parse(markdown) });
-  return blocks;
-}
-
-function excerptOf(body) {
-  return body
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .find(
-      (l) => l && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**') && !l.startsWith('<!--'),
-    );
-}
-
-const knownSlugs = new Set(characters.map((c) => c.slug));
-/** A name as written in a bible or a story's frontmatter → the character's slug, or null. */
-function resolveSlug(value) {
-  const raw = String(value).trim();
-  return knownSlugs.has(raw) ? raw : (nameToSlug[raw] ?? nameToSlug[raw.toLowerCase()] ?? null);
-}
-
-/**
- * A story's `memories:` frontmatter → [slug, fields] pairs, dropping unknown names.
- * Both languages read the same shape, so they share this.
- */
-function memoryEntries(raw) {
-  return Object.entries(raw ?? {}).flatMap(([name, value]) => {
-    const slug = resolveSlug(name);
-    if (!slug || !value || typeof value !== 'object') return [];
-    return [
-      [
-        slug,
-        {
-          title: String(value.title ?? ''),
-          knowledge: String(value.knowledge ?? 'witnessed'),
-          summary: String(value.summary ?? ''),
-          impact: value.impact ? String(value.impact) : null,
-        },
-      ],
-    ];
-  });
+  return latestIllustrationsOf(fs.readdirSync(dir), stem).map((i) => ({ ...i, src: path.join(dir, i.file) }));
 }
 
 /** Check generated data against src/data/schema.ts and stop the build on the first bad record. */
@@ -131,104 +72,6 @@ function validate(schema, value, what, labelOf) {
     console.error(`  ${[where, ...rest].filter((p) => p !== '').join('.')}: ${issue.message}`);
   }
   process.exit(1);
-}
-
-// ---- bible parsing ----------------------------------------------------------
-
-function linkNames(html) {
-  // **haide** → <a href="../haide/">haide</a> (relative link works from any /<lang>/characters/<slug>/ page)
-  return html.replace(/<strong>([^<]+)<\/strong>/g, (m, name) => {
-    const slug = resolveSlug(name);
-    return slug ? `<a class="name-link" data-slug="${slug}" href="../${slug}/">${name}</a>` : m;
-  });
-}
-
-// English bibles (性格设定.en.md) use these headings; they map onto the Chinese canonical
-// section names so descriptionOrder / relations / phrases resolve for both languages.
-// Keep this table in sync with .agents/skills/translate-en/SKILL.md.
-const SECTION_ALIASES = {
-  Basics: '基本信息',
-  'Core personality': '性格核心',
-  'Personality in the design': '外形里的性格线索',
-  Habits: '行为习惯',
-  'Expressions and moods': '表情与情绪',
-  'Likes / dislikes': '喜欢 / 讨厌',
-  'Strengths and growth': '优点与课题',
-  'Meaning of the props': '道具的意义',
-  Relationships: '和其他人的相处',
-};
-const canonTitle = (t) => SECTION_ALIASES[t] ?? t;
-const isExtra = (s) => s.canon.startsWith('额外设定') || /^Extra(\s[^:：]+)?[:：]/.test(s.title);
-const extraLabel = (s) =>
-  s.title
-    .replace(/^额外设定[一二三四五六七八九十]?[:：]?\s*/, '')
-    .replace(/^Extra(\s[^:：]+)?[:：]\s*/, '') || s.title;
-
-function parseBible(md) {
-  const lines = md.split(/\r?\n/);
-  const titleLine = lines.find((l) => l.startsWith('# ')) ?? '';
-  const tagline = (md.match(/^> (?:一句话|One line)[:：]\s*(.+)$/m)?.[1] ?? '').trim();
-
-  const sections = [];
-  let cur = null;
-  for (const line of lines) {
-    if (line.startsWith('## ')) {
-      const title = line.slice(3).trim();
-      cur = { title, canon: canonTitle(title), lines: [] };
-      sections.push(cur);
-    } else if (cur) cur.lines.push(line);
-  }
-  const bySection = (canon) => sections.find((s) => s.canon === canon);
-
-  const basic = {};
-  const basicSec = bySection('基本信息');
-  if (basicSec) {
-    for (const l of basicSec.lines) {
-      const m = l.match(/^\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|$/);
-      if (m && !['项目', 'Item', 'Field'].includes(m[1]) && !/^-+$/.test(m[1])) basic[m[1]] = m[2];
-    }
-  }
-
-  const habits = bySection('行为习惯');
-  const phraseLine = habits?.lines.find((l) => l.includes('口头禅') || /catchphrase/i.test(l));
-  // Chinese catchphrases stay short by nature; English ones need more room to stay quotable.
-  const phrases = phraseLine
-    ? [...phraseLine.matchAll(/"([^"]+)"/g)]
-        .map((m) => m[1])
-        .filter((p) => p.length <= (/[\u4e00-\u9fff]/.test(p) ? 24 : 60))
-    : [];
-
-  const toHtml = (s) => marked.parse(s.lines.join('\n').trim());
-
-  const description = descriptionOrder
-    .map((t) => bySection(t))
-    .filter(Boolean)
-    .map((s) => ({ title: s.title, html: toHtml(s) }));
-
-  const extras = sections.filter(isExtra).map((s) => ({ title: extraLabel(s), html: toHtml(s) }));
-
-  const relSec = bySection('和其他人的相处');
-  const relations = relSec
-    ? relSec.lines
-        .filter((l) => l.startsWith('- '))
-        .map((l) => {
-          const html = linkNames(marked.parseInline(l.slice(2).trim()));
-          const targets = [...l.matchAll(/\*\*([^*]+)\*\*/g)].map((m) => resolveSlug(m[1])).filter(Boolean);
-          return { html, targets: [...new Set(targets)] };
-        })
-    : [];
-
-  return {
-    title: titleLine.replace(/^#\s*/, ''),
-    tagline,
-    mbti: (basic['MBTI'] ?? '').split(/[（(]/)[0].trim(),
-    mbtiLabel: basic['MBTI'] ?? '',
-    basic,
-    phrases,
-    description,
-    extras,
-    relations,
-  };
 }
 
 // ---- characters -------------------------------------------------------------

@@ -1,0 +1,45 @@
+name: CI
+
+# Everything here used to be local-only, so a broken build or an untranslated page could
+# reach main unnoticed. Vercel still does the deploying; this only gates correctness.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      # ResearchAssets is a private submodule and the site does not read it, so leave it out.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # sync-content.mjs imports src/data/schema.ts directly, which needs Node's
+          # built-in type stripping (Node 22.18+ / 24).
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install
+        working-directory: website
+        run: npm ci
+
+      - name: Unit tests
+        working-directory: website
+        run: npm test
+
+      # sync → prettier check → astro check → build
+      - name: Verify
+        working-directory: website
+        run: npm run verify
+
+      # needs website/dist from the build above, so it can also check that no /en/ page
+      # still contains Chinese text
+      - name: English coverage
+        run: python3 tools/audit_en.py --dist
+
+      - name: Skill stubs in sync
+        run: python3 tools/skill_stubs.py

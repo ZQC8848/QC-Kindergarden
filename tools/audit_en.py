@@ -21,7 +21,7 @@ CHAR_DIR = ROOT / 'character reference'
 STORIES = ROOT / 'stories'
 I18N = ROOT / 'website' / 'src' / 'i18n.ts'
 DIST_EN = ROOT / 'website' / 'dist' / 'en'
-SYNC = ROOT / 'website' / 'scripts' / 'sync-content.mjs'
+ALIAS_SRC = ROOT / 'website' / 'scripts' / 'parse.mjs'
 
 CJK = re.compile(r'[㐀-䶿一-鿿　-〿＀-￯]+')
 ALLOWED_CJK = {'中文'}  # language switch label on English pages
@@ -29,7 +29,7 @@ ALLOWED_CJK = {'中文'}  # language switch label on English pages
 
 def load_aliases():
     """Read SECTION_ALIASES from the sync script so the audit cannot drift from it."""
-    text = SYNC.read_text(encoding='utf-8')
+    text = ALIAS_SRC.read_text(encoding='utf-8')
     block = re.search(r'const SECTION_ALIASES = \{(.*?)\};', text, re.S)
     aliases = {}
     if block:
@@ -37,6 +37,11 @@ def load_aliases():
         # `'Core personality':`), so accept a key either way.
         for m in re.finditer(r"(?:'([^']+)'|([A-Za-z_$][\w$]*))\s*:\s*'([^']+)'", block.group(1)):
             aliases[m.group(1) or m.group(2)] = m.group(3)
+    if not aliases:
+        # Same failure mode as the i18n check: the table moved from sync-content.mjs to
+        # parse.mjs once already, and an empty table turns every English bible into a
+        # false positive instead of an error.
+        sys.exit(f'[setup] no SECTION_ALIASES found in {ALIAS_SRC.relative_to(ROOT)}; the parser needs updating')
     return aliases
 
 
