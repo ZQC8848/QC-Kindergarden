@@ -1,0 +1,79 @@
+{
+  "name": "default",
+  "version": "v1",
+  "about": [
+    "The output format the models are asked for. brief.py renders it into the brief, run_round.py maps each reply by these keys, and the review site shows the fields in this order.",
+    "To change the format, edit this file, or copy it to formats/<new-name>.json and pass --format <new-name>. No code change is needed.",
+    "Placeholders: <<PREMISE_HINT>> becomes the slot hint from brief.py, <<MAX_CHARS>> becomes the outline ceiling drawn for the slot.",
+    "body_field names the field holding the outline itself. Fields that are not Candidate attributes are kept in candidate.extra.",
+    "show tells the review site where a field goes: title, kind, cast, location, nearest, body, note (listed under the outline with its label), or hidden.",
+    "Bump version whenever the wording or the field list changes, so rounds generated under different formats can be told apart.",
+    "label_en is the English label on the review site. Like label and show it is display only and never reaches the brief, so changing it needs no version bump."
+  ],
+  "intro": "输出一个 JSON 对象，字段如下：",
+  "outro": "只输出这一个 JSON 对象，不要输出任何其他文字。",
+  "body_field": "outline",
+  "body_aliases": [
+    "story"
+  ],
+  "fields": [
+    {
+      "key": "title",
+      "instruction": "故事标题。",
+      "show": "title"
+    },
+    {
+      "key": "premise_line",
+      "instruction": "一行，<<PREMISE_HINT>>",
+      "show": "note",
+      "label": "前提",
+      "label_en": "Premise"
+    },
+    {
+      "key": "kind",
+      "instruction": "`memory` 或 `extra`。",
+      "show": "kind"
+    },
+    {
+      "key": "cast",
+      "instruction": "出场角色的 slug 列表。",
+      "show": "cast"
+    },
+    {
+      "key": "location",
+      "instruction": "场景文件名，从上面的场景清单里挑最合适的一个。**地点由故事决定，不要为了用某个地点而编故事。**",
+      "show": "location"
+    },
+    {
+      "key": "nearest",
+      "instruction": "下面已有故事里与这篇**同类**的那一篇（slug）。",
+      "show": "nearest"
+    },
+    {
+      "key": "stands_beside",
+      "instruction": "这篇凭什么配站在那一篇旁边——它带来了那一篇没有的什么。**要求的是\"配得上\"，不是\"比它小\"：不要用更平淡、更安静、更少人物来制造区别。**",
+      "show": "note",
+      "label": "比照",
+      "label_en": "Stands beside"
+    },
+    {
+      "key": "residue",
+      "instruction": "这个故事之后留下的、改不回去的那个东西。",
+      "show": "note",
+      "label": "残留",
+      "label_en": "Residue"
+    },
+    {
+      "key": "new_elements",
+      "instruction": "**只统计新的客串角色或新的场景**，两者都没有就填 `\"none\"`。新的情节、道具、笑点、以及关于现有角色的新事实都**不算**——那些是正常创作。",
+      "show": "note",
+      "label": "新元素",
+      "label_en": "New elements"
+    },
+    {
+      "key": "outline",
+      "instruction": "故事大纲，**不超过 <<MAX_CHARS>> 字**。不是正文，不要写对白和场面。",
+      "show": "body"
+    }
+  ]
+}

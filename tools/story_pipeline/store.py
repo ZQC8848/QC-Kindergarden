@@ -66,6 +66,27 @@ MAX_REVISITS = 3
 MAX_OUTLINE_CHARS = 200
 MAX_PROSE_CHARS = 2286
 
+SCORE_MIN, SCORE_MAX = 0, 10
+
+# QC's bands for the review site (2026-09-10; shortlist widened to 4-7 the same day). The
+# slider maps a score straight to a destination; within the top band, writing notes is what
+# makes it "selected with notes", and that also sends it straight back to its model for a
+# rewrite (rewrite.py).
+SCORE_BANDS = (
+    (0, 3, 'discarded'),
+    (4, 7, 'shortlisted'),
+    (8, 10, 'selected'),
+)
+
+
+def verdict_for_score(score: int, *, has_notes: bool) -> str:
+    if isinstance(score, bool) or not isinstance(score, int) or not SCORE_MIN <= score <= SCORE_MAX:
+        raise ValueError(f'score must be an integer {SCORE_MIN}-{SCORE_MAX}; got {score!r}')
+    for lo, hi, verdict in SCORE_BANDS:
+        if lo <= score <= hi:
+            return 'selected_with_notes' if verdict == 'selected' and has_notes else verdict
+    raise ValueError(f'no band covers score {score}')
+
 
 @dataclass
 class Candidate:
@@ -97,6 +118,17 @@ class Candidate:
     revisit_count: int = 0
     decided_at: str | None = None
     published_at: str | None = None   # set once pushed to Discord, so re-runs do not duplicate
+    # Added with the review site (2026-09-10). Older candidate files lack these keys and
+    # read back with the defaults.
+    score: int | None = None               # QC's 0-10 score; None for terminal verdicts given without one
+    reasons: list = field(default_factory=list)  # every discard reason ticked; `reason` stays the first
+    max_chars: int | None = None           # outline ceiling this candidate was asked for
+    rewrite_max_chars: int | None = None   # ceiling QC set for this candidate's next rewrite
+    parent: str | None = None              # the candidate this one rewrites
+    rewrite: str | None = None             # 'waitlist' | 'revise'; None for a fresh candidate
+    rewritten_as: str | None = None        # the rewrite this candidate produced
+    format_version: str | None = None      # output format asked for, e.g. default@v1
+    extra: dict = field(default_factory=dict)  # format fields Candidate has no attribute for
     parse_failed: bool = False
     raw: str = ''
 
@@ -107,8 +139,13 @@ class Candidate:
         """Rough length. CJK has no spaces, so count characters and ignore whitespace."""
         return len(re.sub(r'\s+', '', self.outline))
 
+    def ceiling(self) -> int:
+        """The outline ceiling this candidate was asked for. Candidates from before per-slot
+        ceilings were all asked for MAX_OUTLINE_CHARS."""
+        return self.max_chars or MAX_OUTLINE_CHARS
+
     def over_limit(self) -> bool:
-        return self.words() > MAX_OUTLINE_CHARS
+        return self.words() > self.ceiling()
 
 
 def new_id() -> str:
@@ -120,7 +157,8 @@ def new_id() -> str:
 # --------------------------------------------------------------------------- io
 
 _SCALAR = ('id', 'round', 'slot', 'model', 'taste_context', 'title', 'kind', 'location',
-           'nearest', 'verdict', 'reason', 'notes', 'decided_at', 'published_at')
+           'nearest', 'verdict', 'reason', 'notes', 'decided_at', 'published_at',
+           'score', 'max_chars', 'rewrite_max_chars', 'parent', 'rewrite', 'rewritten_as', 'format_version')
 
 
 def _yaml_scalar(v) -> str:
@@ -142,6 +180,8 @@ def write(c: Candidate) -> Path:
         lines.append(f'{k}: {_yaml_scalar(getattr(c, k))}')
     lines.append('cast: ' + json.dumps(c.cast, ensure_ascii=False))
     lines.append('new_elements: ' + json.dumps(c.new_elements, ensure_ascii=False))
+    lines.append('reasons: ' + json.dumps(c.reasons or [], ensure_ascii=False))
+    lines.append('extra: ' + json.dumps(c.extra or {}, ensure_ascii=False))
     lines.append(f'revisit_count: {c.revisit_count}')
     lines.append(f'parse_failed: {"true" if c.parse_failed else "false"}')
     lines += ['---', '']
@@ -181,6 +221,13 @@ def read(path: Path) -> Candidate:
             data[k] = v
     body = md[fm.end():]
     data.setdefault('cast', [])
+    if not isinstance(data.get('reasons'), list):
+        data['reasons'] = []
+    # Files written before multi-select carry a single `reason`; read it as a one-item list.
+    if not data['reasons'] and data.get('reason'):
+        data['reasons'] = [data['reason']]
+    if not isinstance(data.get('extra'), dict):
+        data['extra'] = {}
     data['premise_line'] = _field(body, 'Premise')
     data['stands_beside'] = _field(body, 'Stands beside')
     data['residue'] = _field(body, 'Residue')
@@ -221,27 +268,55 @@ def load_all() -> list[Candidate]:
     return out
 
 
+def find(cid: str) -> Candidate | None:
+    for c in load_all():
+        if c.id == cid:
+            return c
+    return None
+
+
+def link_rewrite(parent: Candidate, child: Candidate) -> Candidate:
+    """Record that `parent` has been rewritten. That also takes it out of the pool: the
+    rewrite carries the idea forward, and pulling the parent as well would rewrite it twice."""
+    parent.rewritten_as = child.id
+    write(parent)
+    return parent
+
+
 # --------------------------------------------------------------------------- verdicts
 
-def decide(c: Candidate, verdict: str, *, reason: str | None = None, notes: str | None = None, now: str) -> Candidate:
-    """Apply a verdict, enforcing the two rules that make the archive worth keeping."""
+def decide(c: Candidate, verdict: str, *, reason: str | None = None, reasons: list | None = None,
+           notes: str | None = None, score: int | None = None, now: str) -> Candidate:
+    """Apply a verdict, enforcing the rules that make the archive worth keeping."""
     if verdict not in VERDICTS:
         raise ValueError(f'unknown verdict {verdict!r}; expected one of {VERDICTS}')
-    # A discard without a reason is the failure mode the whole research pile exists to
-    # avoid: six months later nobody can say why it was cut.
-    if verdict == 'discarded' and not reason:
-        raise ValueError('a discard must carry a reason; one of: ' + ', '.join(REASONS))
-    if reason and reason not in REASONS:
-        raise ValueError(f'unknown reason {reason!r}; expected one of {", ".join(REASONS)}')
+    picked = list(reasons or [])
+    if reason and reason not in picked:
+        picked.insert(0, reason)
+    for r in picked:
+        if r not in REASONS:
+            raise ValueError(f'unknown reason {r!r}; expected one of {", ".join(REASONS)}')
+    notes = notes.strip() if isinstance(notes, str) and notes.strip() else None
+    if score is not None and (isinstance(score, bool) or not isinstance(score, int)
+                              or not SCORE_MIN <= score <= SCORE_MAX):
+        raise ValueError(f'score must be an integer {SCORE_MIN}-{SCORE_MAX}; got {score!r}')
+    # A discard that says nothing is the failure mode the whole research pile exists to
+    # avoid: six months later nobody can say why it was cut. Since 2026-09-10 QC's own words
+    # in the text box count as saying why; the reason chips are shortcuts next to it.
+    if verdict == 'discarded' and not picked and not notes:
+        raise ValueError('a discard must say why: a note, a reason, or both; reasons: ' + ', '.join(REASONS))
     if verdict == 'selected_with_notes' and not notes:
         raise ValueError('selected_with_notes must carry the requested changes')
     # A shortlisted idea comes back later to be rewritten, and a rewrite without QC's
     # read on what works and what is missing just regenerates the same flaw.
     if verdict == 'shortlisted' and not notes:
-        raise ValueError('a shortlist must carry QC\'s view: what works, and what is missing')
+        raise ValueError("a shortlist must carry QC's view: what works, and what is missing")
     c.verdict = verdict
-    c.reason = reason
+    c.reasons = picked
+    c.reason = picked[0] if picked else None
     c.notes = notes
+    if score is not None:
+        c.score = score
     c.decided_at = now
     write(c)
     return c
@@ -267,7 +342,8 @@ def revisit(c: Candidate, *, now: str) -> Candidate:
 
 def shortlist_pool() -> list[Candidate]:
     """Shortlisted candidates still eligible to be pulled, least-revisited first."""
-    pool = [c for c in load_all() if c.verdict == 'shortlisted' and c.revisit_count <= MAX_REVISITS]
+    pool = [c for c in load_all()
+            if c.verdict == 'shortlisted' and not c.rewritten_as and c.revisit_count <= MAX_REVISITS]
     return sorted(pool, key=lambda c: (c.revisit_count, c.id))
 
 
@@ -281,15 +357,25 @@ def write_round_meta(round_id: str, meta: dict) -> Path:
 
 
 def stats(round_id: str) -> dict:
-    """Per-model verdict distribution for one round. Read after review, never before —
-    this is the number blind review exists to protect."""
+    """Per-model verdict distribution for one round. Read after review, never before;
+    this is the number blind review exists to protect.
+
+    Rewrites are left out. The comparison rests on every model on a slot receiving the
+    same brief, and a rewrite brief is by construction unique to one story."""
     out: dict = {}
+    scores: dict = {}
     for c in load_round(round_id):
+        if c.rewrite:
+            continue
         row = out.setdefault(c.model, {v: 0 for v in VERDICTS})
         row[c.verdict] += 1
+        if c.score is not None:
+            scores.setdefault(c.model, []).append(c.score)
     for model, row in out.items():
         total = sum(row.values()) or 1
         row['accept_rate'] = round((row['selected'] + row['selected_with_notes']) / total, 3)
+        s = scores.get(model)
+        row['avg_score'] = round(sum(s) / len(s), 2) if s else None
     return out
 
 

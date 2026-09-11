@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -30,7 +31,12 @@ CHARS = ROOT / 'character reference'
 GUESTS = CHARS / '_guests'
 STORIES = ROOT / 'stories'
 CONFIG = ROOT / 'website' / 'src' / 'data' / 'characters.config.mjs'
-TASTE = ROOT / '.agents' / 'skills' / 'qc-taste' / 'references' / 'taste-profile.md'
+# QC's taste profile, split by domain and kept in two languages (2026-09-10). A story brief
+# carries the shared part plus the story domain. Every round so far sent the English text, so
+# English stays what the models get; switching language changes the brief and deserves its
+# own ablation rather than riding along with another change.
+TASTE_DIR = ROOT / '.agents' / 'skills' / 'qc-taste' / 'references' / 'taste'
+TASTE_LANG = 'en'
 
 
 # --------------------------------------------------------------------------- sources
@@ -209,7 +215,7 @@ RULES = """\
 - 记忆是主观的：同一件事，每个角色记住的版本不同，有人只知道一部分，有人知情但保密。不要让角色仅仅因为读者知道就知道某件事。
 - **秘密只属于知情的人。** 下面「已有故事」每篇都列了知情者；没列出来的角色就是不知道，不能参与、议论、记录或追查那件事。
 - **除了 QC，所有角色都是孩子。** 幼儿园另有园长、老师等大人，但他们不出现在故事里，也不需要解释他们为什么不在。孩子不掌握机构层面的权力：门禁、账本、广播、园主身份不会归到任何一个孩子名下。
-- **这一步只写大纲，不写正文。** 大纲上限 **200 字**（不含空白），写不满不要紧，写不下说明前提还没收干净。
+- **这一步只写大纲，不写正文。** 大纲上限 **<<MAX_CHARS>> 字**（不含空白），写不满不要紧，写不下说明前提还没收干净。
   正文由另一个环节统一执笔，你要交的是一个值得被写成故事的前提。
 - 大纲里要能看出：谁做了什么、什么翻转了、结束时什么变了。不需要对白，不需要场面描写，不需要铺垫。
 - 讲法上仍然克制：**不要在大纲里解释笑点**，也不要用形容词替代事件。「他慌了」不如「他把项圈摘下来塞进了花盆」。
@@ -278,29 +284,91 @@ PREMISE_HINT = {
     'expansion': '说明引入的新人物或新地点是什么、为什么非它不可。这个位子不是续集，不要接任何已有故事。',
 }
 
-OUTPUT_SPEC = """\
-## 输出格式
+FORMATS = Path(__file__).resolve().parent / 'formats'
+DEFAULT_FORMAT = 'default'
+# The outline ceiling a brief states when the caller does not pass one. It must equal
+# store.MAX_OUTLINE_CHARS; a test pins the two together.
+DEFAULT_MAX_CHARS = 200
 
-输出一个 JSON 对象，字段如下：
-
-- `title`：故事标题。
-- `premise_line`：一行，<<PREMISE_HINT>>
-- `kind`：`memory` 或 `extra`。
-- `cast`：出场角色的 slug 列表。
-- `location`：场景文件名，从上面的场景清单里挑最合适的一个。**地点由故事决定，不要为了用某个地点而编故事。**
-- `nearest`：下面已有故事里与这篇**同类**的那一篇（slug）。
-- `stands_beside`：这篇凭什么配站在那一篇旁边——它带来了那一篇没有的什么。**要求的是"配得上"，不是"比它小"：不要用更平淡、更安静、更少人物来制造区别。**
-- `residue`：这个故事之后留下的、改不回去的那个东西。
-- `new_elements`：**只统计新的客串角色或新的场景**，两者都没有就填 `"none"`。新的情节、道具、笑点、以及关于现有角色的新事实都**不算**——那些是正常创作。
-- `outline`：故事大纲，**不超过 200 字**。不是正文，不要写对白和场面。
-
-只输出这一个 JSON 对象，不要输出任何其他文字。
-"""
+# The output format lives in formats/<name>.json rather than in this file. QC found
+# (2026-09-10) that the format itself shifts what the models write, so it has to be cheap
+# to change and possible to compare: the file lists the fields in order, what each one asks
+# for, and which one carries the outline. Changing it needs no code change here, in
+# run_round.py, or on the review site. Each round records the file's sha256, and the
+# rendered text stays inside every slot's brief sha256 as before.
 
 
-def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> str:
-    """One brief. `slot` is a key of SLOTS, or 'expansion'."""
-    out: list[str] = ['# QC Kindergarten 故事大纲任务', '', RULES, '## 角色', '']
+def load_format(name: str = DEFAULT_FORMAT) -> dict:
+    path = FORMATS / f'{name}.json'
+    if not path.exists():
+        known = ', '.join(sorted(p.stem for p in FORMATS.glob('*.json'))) or 'none'
+        raise ValueError(f'unknown output format {name!r}; formats/ has: {known}')
+    spec = json.loads(path.read_text(encoding='utf-8'))
+    spec.setdefault('name', name)
+    spec.setdefault('version', '?')
+    spec['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
+    keys = [f.get('key') for f in spec.get('fields', [])]
+    if not keys or not all(keys):
+        raise ValueError(f'format {name!r} has no fields, or a field without a key')
+    if spec.setdefault('body_field', 'outline') not in keys:
+        raise ValueError(f"format {name!r}: body_field {spec['body_field']!r} is not one of its fields")
+    return spec
+
+
+def render_output_spec(fmt_spec: dict, *, slot: str, max_chars: int) -> str:
+    lines = ['## 输出格式', '', fmt_spec['intro'], '']
+    lines += [f"- `{f['key']}`：{f['instruction']}" for f in fmt_spec['fields']]
+    lines += ['', fmt_spec['outro']]
+    text = '\n'.join(lines) + '\n'
+    return text.replace('<<PREMISE_HINT>>', PREMISE_HINT[slot]).replace('<<MAX_CHARS>>', str(max_chars))
+
+
+REWRITE_MODE_LINE = {
+    'waitlist': '这一篇进了候补：方向有可取之处，但还不够好。作者希望你按意见改写，改写稿会在这一轮重新参评。',
+    'revise': '这一篇已经被选中，但作者要求按意见修改之后再批准。',
+}
+
+
+def render_rewrite(rewrite: dict, *, max_chars: int) -> list[str]:
+    """The block that turns a slot brief into a rewrite request. It sits after the slot's
+    task and before the output format, so the model still sees the premise shape it was
+    working in, then QC's read of what it produced."""
+    mode = rewrite.get('mode')
+    if mode not in REWRITE_MODE_LINE:
+        raise ValueError(f'unknown rewrite mode {mode!r}; expected one of {", ".join(REWRITE_MODE_LINE)}')
+    out = ['## 这一篇是重写', '', REWRITE_MODE_LINE[mode], '']
+    if rewrite.get('title'):
+        out.append(f"- 原标题：{rewrite['title']}")
+    if rewrite.get('score') is not None:
+        out.append(f"- 作者打分：{rewrite['score']} / 10")
+    out.append(f"- 作者意见：{rewrite.get('notes') or '（没有写意见）'}")
+    out += ['', '你之前交的大纲：', '']
+    out += [f'> {line}' if line.strip() else '>' for line in (rewrite.get('outline') or '').splitlines()]
+    out += [
+        '',
+        '重写要求：',
+        '',
+        '- **以作者意见为准。** 意见要推翻的就推翻，不要为了保留原文而保留；意见肯定的部分可以留下。',
+        f'- 仍然只写大纲，上限 **{max_chars} 字**（不含空白）。',
+        '- 交一个完整的新版本，字段按下面的「输出格式」，不要只交改动的部分。',
+        '',
+    ]
+    return out
+
+
+def load_taste(domain: str = 'story', lang: str = TASTE_LANG) -> str:
+    """The shared part of the taste profile followed by one domain, as the models read it."""
+    parts = [TASTE_DIR / f'_shared.{lang}.md', TASTE_DIR / f'{domain}.{lang}.md']
+    return '\n\n'.join(p.read_text(encoding='utf-8').strip() for p in parts)
+
+
+def render(characters, scenes, guests, stories, *, taste: bool, slot: str,
+           max_chars: int = DEFAULT_MAX_CHARS, fmt: dict | None = None, rewrite: dict | None = None) -> str:
+    """One brief. `slot` is a key of SLOTS, or 'expansion'. `rewrite`, when given, turns it
+    into a request to rewrite one earlier outline with QC's notes (see rewrite.py)."""
+    # Not called `spec`: further down, `spec` is the slot's task from SLOTS.
+    fmt_spec = fmt or load_format()
+    out: list[str] = ['# QC Kindergarten 故事大纲任务', '', RULES.replace('<<MAX_CHARS>>', str(max_chars)), '## 角色', '']
 
     for c in characters:
         out.append(f'### {c.name}（{c.mbti}）· slug `{c.slug}`')
@@ -342,7 +410,7 @@ def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> st
     if taste:
         out += ['## 创作偏好', '',
                 '以下是这个项目作者的创作偏好，来自对其历史决策的提炼。它描述作者会选什么，不是质量标准。', '',
-                TASTE.read_text(encoding='utf-8').strip(), '']
+                load_taste('story'), '']
 
     if slot == 'expansion':
         out += ['## 你的任务：扩展位', '', EXPANSION_BRIEF]
@@ -352,11 +420,14 @@ def render(characters, scenes, guests, stories, *, taste: bool, slot: str) -> st
 
     # The hint used to list every slot's clause to every slot, so "接了哪篇的什么残留"
     # reached slots that were never meant to continue anything, and they did.
-    out.append(OUTPUT_SPEC.replace('<<PREMISE_HINT>>', PREMISE_HINT[slot]))
+    if rewrite:
+        out += render_rewrite(rewrite, max_chars=max_chars)
+    out.append(render_output_spec(fmt_spec, slot=slot, max_chars=max_chars))
     return '\n'.join(out)
 
 
-def build(*, taste: bool = True, slot: str = 'contradiction') -> str:
+def build(*, taste: bool = True, slot: str = 'contradiction', max_chars: int = DEFAULT_MAX_CHARS,
+          fmt: str | dict | None = None, rewrite: dict | None = None) -> str:
     """The brief for one slot. Deterministic: same sources + same slot = same bytes.
 
     No seed and no combo assignment any more. Round r01 handed every model a
@@ -369,7 +440,11 @@ def build(*, taste: bool = True, slot: str = 'contradiction') -> str:
     if slot != 'expansion' and slot not in SLOTS:
         raise ValueError(f'unknown slot {slot!r}; expected expansion or one of {", ".join(SLOTS)}')
     characters = [parse_character(slug, folder) for slug, folder in load_roster()]
-    return render(characters, load_scenes(), load_guests(), load_stories(), taste=taste, slot=slot)
+    if isinstance(max_chars, bool) or not isinstance(max_chars, int) or max_chars < 1:
+        raise ValueError(f'max_chars must be a positive integer; got {max_chars!r}')
+    fmt_spec = fmt if isinstance(fmt, dict) else load_format(fmt or DEFAULT_FORMAT)
+    return render(characters, load_scenes(), load_guests(), load_stories(), taste=taste, slot=slot,
+                  max_chars=max_chars, fmt=fmt_spec, rewrite=rewrite)
 
 
 def sha256(text: str) -> str:
@@ -381,6 +456,8 @@ def main():
     ap.add_argument('--slot', default='contradiction',
                     help='consequence | contradiction | escalation | transposition | expansion')
     ap.add_argument('--no-taste', action='store_true', help='ablation arm: omit the taste profile')
+    ap.add_argument('--max-chars', type=int, default=DEFAULT_MAX_CHARS, help='outline ceiling stated in the brief')
+    ap.add_argument('--format', default=DEFAULT_FORMAT, help='output format, formats/<name>.json')
     ap.add_argument('--slots', action='store_true', help='list the slots and exit')
     args = ap.parse_args()
     if hasattr(sys.stdout, 'reconfigure'):
@@ -392,7 +469,7 @@ def main():
         print(f"{'expansion':15} 扩展位  {EXPANSION_BRIEF.splitlines()[0]}")
         return 0
 
-    text = build(taste=not args.no_taste, slot=args.slot)
+    text = build(taste=not args.no_taste, slot=args.slot, max_chars=args.max_chars, fmt=args.format)
     print(text)
     print(f'\n<!-- slot={args.slot} {len(text)} chars, sha256 {sha256(text)[:12]} -->', file=sys.stderr)
     return 0

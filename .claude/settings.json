@@ -20,6 +20,12 @@
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_bilingual_consistency.py\"",
             "timeout": 40,
             "statusMessage": "检查网站中英文内容是否一致"
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/tools/taste_sync.py\" hook",
+            "timeout": 15,
+            "statusMessage": "检查 taste 中英版本是否同步"
           }
         ]
       }

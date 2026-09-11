@@ -47,3 +47,15 @@ jobs:
       # Pure logic only: no model calls, no network, no ResearchAssets checkout needed.
       - name: Story pipeline tests
         run: python3 tools/story_pipeline/test_pipeline.py
+
+      # The local review site's server: blind state, verdict rules, rewrites, host checks.
+      # Dry-run models only; it binds an ephemeral port on 127.0.0.1.
+      - name: Story review site tests
+        run: python3 tools/story_review/test_server.py
+
+      # Both languages of the qc-taste profile must say the same thing. Claude Code gets a hook
+      # after every edit; Codex does not, so the check has to live here as well.
+      - name: Taste profile in sync in both languages
+        run: |
+          python3 tools/taste_sync.py
+          python3 tools/test_taste_sync.py

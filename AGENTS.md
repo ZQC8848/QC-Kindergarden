@@ -8,10 +8,11 @@
 - `stories/` — 情景喜剧故事，跨人物事件的唯一正式来源。规则见 `stories/README.md`。
 - `Scene Reference/` — 场景参考图，故事的 `location` 与网站地点页都引用它。
 - `website/` — Astro 双语站，构建时从上面三个目录同步内容。跑法见 `website/README.md`。
-- `tools/` — 两个 agent 共用的脚本：`audit_en.py`（中英覆盖审计）、`skill_stubs.py`（skill 桩同步）、`taste_scan.py`（算出 `qc-taste` 这次该读哪些新增的对话记录）。
-- `tools/story_pipeline/` — 故事生成流水线：四模型并行出大纲、盲评裁决、候选库。跑法见其 `README.md`，设计见 `docs/2026-09-09-story-pipeline-design.md`。候选数据在私有 submodule 的 `story-candidates/`。
-- `.github/workflows/ci.yml` — push 与 PR 上跑单元测试、`npm run verify`、英文覆盖审计、skill 桩校验。注意 CI 构建的 dist 只用于校验，上线的是本地 prebuilt 的那份（见 `website/README.md`）。
-- `.agents/state/` — skill 的运行时状态（如 discord 通知记录）。skill 目录只放定义，会变的东西放这里。
+- `tools/` — 两个 agent 共用的脚本：`audit_en.py`（中英覆盖审计）、`skill_stubs.py`（skill 桩同步）、`taste_scan.py`（算出 `qc-taste` 这次该读哪些新增的对话记录）、`taste_sync.py`（taste 中英两版是否同步；Claude Code 的 hook 在每次编辑后调用它，CI 也跑）。
+- `tools/story_pipeline/` — 故事生成流水线：四模型并行出大纲、盲评裁决、候选库、两种重写。输出格式在 `formats/default.json`，改格式不改代码。跑法见其 `README.md`，设计见 `docs/2026-09-09-story-pipeline-design.md`。候选数据在私有 submodule 的 `story-candidates/`。
+- `tools/story_review/` — 本地评审站（只在 127.0.0.1 跑，不上 Vercel）：打分定去向、批注、生成下一轮、触发重写；中英切换（故事和批注走 Google 翻译，key 在私有 submodule）与日夜主题。`python tools/story_review/server.py --dry-run` 在临时副本上演练。见其 `README.md`。
+- `.github/workflows/ci.yml` — push 与 PR 上跑单元测试、`npm run verify`、英文覆盖审计、skill 桩校验、流水线与评审站的 Python 测试。注意 CI 构建的 dist 只用于校验，上线的是本地 prebuilt 的那份（见 `website/README.md`）。
+- `.agents/state/` — skill 的运行时状态（如 discord 通知记录、taste 中英同步记录）。skill 目录只放定义，会变的东西放这里。
 - `docs/` — 项目检测与整改记录。
 - `ResearchAssets/` — **私有 submodule**，研究 / 论文 / 申请材料。主仓库公开，这个目录不公开。改动流程见 `ResearchAssets/AGENTS.md`。
 
@@ -23,7 +24,7 @@
 
 - `fieldnotes` — 项目知识记录。
 - `story-illustrator` — 故事插画提案、可复用资产准备与生成工作流。
-- `qc-taste` — 从人类创作决策中提炼并延续 QC 的可更新创作 taste；正式规则更新需要 QC 批准。
+- `qc-taste` — 从人类创作决策中提炼并延续 QC 的可更新创作 taste；正式规则更新需要 QC 批准。偏好按共通 + 故事创作 / 图片生成 / 分镜头 / 视频生成拆分，中英双版，改了一边就要同步另一边。
 - `translate-en` — 网站英文版翻译工作流：覆盖审计、文学性优先的译法、意译决策汇报。
 - `discord-notify` — 新故事 / 新插图上线后，通过 Discord webhook 发不剧透的更新通知，附网站链接。
 

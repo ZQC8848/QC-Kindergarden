@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "parts": {
+    "_shared": {
+      "en": "08f11d8bea14efe3118efc522db456143ede372e71fc382c01b40c0206909d2f",
+      "zh": "da40930f03350510e3c9a30f0368ac20488a69d083832d54f24403de51e4b1bc",
+      "stamped": "2026-09-10"
+    },
+    "image": {
+      "en": "5c1a8e1affe72927f7adfb910f91a184ca49733c4635ea9820793a2bf009beab",
+      "zh": "2884408950c0e00ded0839d48f99a0bf4c940e438651abccf49cc554817017ef",
+      "stamped": "2026-09-10"
+    },
+    "story": {
+      "en": "390dd6902dbf23ea8ba09bc675cbd6adb209cf70d1a21cad620e00ac1c6aeec2",
+      "zh": "621184561fe09a6407e2851155fd6228bbd21e6c22928d071f9cb0134b92ec7e",
+      "stamped": "2026-09-10"
+    },
+    "storyboard": {
+      "en": "b50073a5186261c31089716c9d7824764945fd8b59b69568cc465fa292d62ed6",
+      "zh": "5e083e09dffbbfec8cd47af401ec27c9bcb4805621f05a10cfc3fcb9f109341c",
+      "stamped": "2026-09-10"
+    },
+    "video": {
+      "en": "40d159e27ebc02af283c31bfa04be7de353b441c03c40c74c447ec7722657f95",
+      "zh": "e8b4bd6df99483179b6a760c4726def16edd91c0bf8139c6bf8b7894fc5cccff",
+      "stamped": "2026-09-10"
+    }
+  }
+}

@@ -50,11 +50,13 @@ def find(cid: str) -> store.Candidate:
 
 def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
     over = ' ⚠超上限' if c.over_limit() else ''
-    print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()} 字{over}')
+    print(f'\n{c.id}  「{c.title}」  [{c.kind}] {c.location or "-"}  {c.words()}/{c.ceiling()} 字{over}')
     if not blind:
         print(f'  model: {c.model}  taste: {c.taste_context}  slot: {c.slot}')
     if c.parse_failed:
         print('  !! 模型输出无法解析；原始内容在文件里')
+    if c.parent:
+        print(f'  改写  {"候补重写" if c.rewrite == "waitlist" else "按意见重写"}，来自 {c.parent}')
     if c.premise_line:
         print(f'  前提  {c.premise_line}')
     if c.cast:
@@ -70,16 +72,20 @@ def show(c: store.Candidate, *, blind: bool = True, full: bool = False) -> None:
         for line in c.outline.splitlines():
             print(f'  {line}')
     if c.verdict != 'pending':
-        tail = f' ({store.REASONS.get(c.reason, c.reason)})' if c.reason else ''
-        print(f'  -> {c.verdict}{tail}' + (f'  notes: {c.notes}' if c.notes else ''))
+        why = [store.REASONS.get(r, r) for r in (c.reasons or ([c.reason] if c.reason else []))]
+        tail = f' ({"；".join(why)})' if why else ''
+        score = f'  score: {c.score}' if c.score is not None else ''
+        print(f'  -> {c.verdict}{tail}{score}' + (f'  notes: {c.notes}' if c.notes else ''))
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('id', nargs='?', help='candidate id')
     ap.add_argument('verdict', nargs='?', choices=list(VERDICT_ALIASES), help='discard | shortlist | select | revise')
-    ap.add_argument('--reason', choices=list(store.REASONS), help='required for discard')
-    ap.add_argument('--notes', help='required for revise')
+    ap.add_argument('--reason', choices=list(store.REASONS), help='a discard needs --reason/--reasons or --notes')
+    ap.add_argument('--notes', help='required for revise and shortlist')
+    ap.add_argument('--reasons', nargs='+', choices=list(store.REASONS), help='several discard reasons; the first is primary')
+    ap.add_argument('--score', type=int, help='0-10, as on the review site')
     ap.add_argument('--round', default=None)
     ap.add_argument('--show', metavar='ID')
     ap.add_argument('--all', action='store_true', help='include already-decided candidates')
@@ -105,14 +111,15 @@ def main() -> int:
                   ' seeing them early is what blind review is for.')
             return 1
         print(f'{round_id}\n')
-        print(f'{"model":10} {"sel":>4} {"rev":>4} {"short":>6} {"disc":>5} {"accept":>7}')
+        print(f'{"model":10} {"sel":>4} {"rev":>4} {"short":>6} {"disc":>5} {"accept":>7} {"avg":>5}')
         for model, row in sorted(store.stats(round_id).items()):
+            avg = f'{row["avg_score"]:.1f}' if row.get('avg_score') is not None else '-'
             print(f'{model:10} {row["selected"]:>4} {row["selected_with_notes"]:>4} '
-                  f'{row["shortlisted"]:>6} {row["discarded"]:>5} {row["accept_rate"]:>7.0%}')
+                  f'{row["shortlisted"]:>6} {row["discarded"]:>5} {row["accept_rate"]:>7.0%} {avg:>5}')
         reasons: dict[str, int] = {}
         for c in store.load_round(round_id):
-            if c.reason:
-                reasons[c.reason] = reasons.get(c.reason, 0) + 1
+            for r in (c.reasons or ([c.reason] if c.reason else [])):
+                reasons[r] = reasons.get(r, 0) + 1
         if reasons:
             print('\ndiscard reasons:')
             for k, v in sorted(reasons.items(), key=lambda kv: -kv[1]):
@@ -126,7 +133,7 @@ def main() -> int:
         for c in pending:
             show(c, blind=True)
         if pending:
-            print('\nverdicts:  discard --reason X  |  shortlist  |  select  |  revise --notes "..."')
+            print('\nverdicts:  discard --reason X / --notes "..."  |  shortlist --notes "..."  |  select  |  revise --notes "..."   [--score 0-10]')
             print('reasons:   ' + '  '.join(f'{k}={v}' for k, v in store.REASONS.items() if k not in ('never_chosen', 'generation_failed')))
         return 0
 
@@ -135,7 +142,8 @@ def main() -> int:
     c = find(args.id)
     now = dt.datetime.now().astimezone().isoformat(timespec='seconds')
     try:
-        c = store.decide(c, VERDICT_ALIASES[args.verdict], reason=args.reason, notes=args.notes, now=now)
+        c = store.decide(c, VERDICT_ALIASES[args.verdict], reason=args.reason, reasons=args.reasons,
+                         notes=args.notes, score=args.score, now=now)
     except ValueError as exc:
         sys.exit(f'[review] {exc}')
     show(c, blind=True)

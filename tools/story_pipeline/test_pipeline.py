@@ -12,6 +12,7 @@ Run:  python tools/story_pipeline/test_pipeline.py
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -272,6 +273,12 @@ class Brief(unittest.TestCase):
     def test_the_floor_plan_is_not_offered_as_a_location(self):
         self.assertNotIn('Kindergarten-Map', brief_mod.build(taste=False, slot='contradiction'))
 
+    def test_the_brief_carries_story_taste_but_not_image_rules(self):
+        text = brief_mod.build(taste=True, slot='contradiction')
+        self.assertIn('Start from characters; let theme emerge', text)      # story
+        self.assertIn('Revise locally once the result is approved', text)   # shared
+        self.assertNotIn('Identity must read before detail', text)          # image only
+
     def test_taste_flag_actually_changes_the_brief(self):
         with_taste = brief_mod.build(taste=True, slot='contradiction')
         without = brief_mod.build(taste=False, slot='contradiction')
@@ -350,6 +357,228 @@ class Brief(unittest.TestCase):
         self.assertIn('stands_beside', text)
         self.assertIn('不是"比它小"', text)
         self.assertNotIn('differs_from', text)
+
+
+class TempStore(unittest.TestCase):
+    """Points the store at a throwaway directory. CI never checks out ResearchAssets."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._saved = store.CANDIDATES
+        store.CANDIDATES = Path(self._tmp.name)
+
+    def tearDown(self):
+        store.CANDIDATES = self._saved
+        self._tmp.cleanup()
+
+    def make(self, **kw) -> store.Candidate:
+        c = store.Candidate(
+            id=kw.pop('id', store.new_id()), round=kw.pop('round', 'r-test'),
+            slot=kw.pop('slot', 'contradiction'), model=kw.pop('model', 'codex'),
+            taste_context=kw.pop('taste_context', 'off'), title=kw.pop('title', '原标题'),
+            outline=kw.pop('outline', '原来的事。'), kind='memory', cast=['haide'], **kw,
+        )
+        store.write(c)
+        return c
+
+
+class OutputFormat(unittest.TestCase):
+    def test_the_default_format_loads_and_names_its_body_field(self):
+        spec = brief_mod.load_format()
+        self.assertEqual(spec['body_field'], 'outline')
+        self.assertIn('outline', [f['key'] for f in spec['fields']])
+        self.assertEqual(len(spec['sha256']), 64)
+
+    def test_an_unknown_format_is_refused(self):
+        with self.assertRaises(ValueError):
+            brief_mod.load_format('no-such-format')
+
+    def test_the_default_ceiling_matches_the_store(self):
+        self.assertEqual(brief_mod.DEFAULT_MAX_CHARS, store.MAX_OUTLINE_CHARS)
+
+    def test_the_ceiling_reaches_both_places_the_brief_states_it(self):
+        text = brief_mod.build(taste=False, slot='contradiction', max_chars=137)
+        self.assertIn('大纲上限 **137 字**', text)
+        self.assertIn('不超过 137 字', text)
+        self.assertNotIn('<<MAX_CHARS>>', text)
+        self.assertNotIn('大纲上限 **200 字**', text)
+
+    def test_a_field_added_to_the_format_reaches_the_brief_and_the_candidate(self):
+        # The point of the format file: a new field needs no code change anywhere.
+        import run_round
+        spec = json.loads(json.dumps(brief_mod.load_format()))
+        spec['fields'].insert(-1, {'key': 'hook', 'instruction': '一句钩子。', 'show': 'note', 'label': '钩子'})
+        self.assertIn('- `hook`：一句钩子。', brief_mod.build(taste=False, slot='contradiction', fmt=spec))
+        raw = json.dumps({'title': 'T', 'outline': '事。', 'hook': '钩'}, ensure_ascii=False)
+        c = run_round.to_candidate(raw, 'kimi', 'r-test', 'contradiction', 'on', spec=spec)
+        self.assertEqual(c.extra, {'hook': '钩'})
+
+    def test_candidates_record_the_format_and_ceiling_they_were_asked_for(self):
+        import run_round
+        c = run_round.to_candidate('{"title": "T", "outline": "事。"}', 'kimi', 'r-test', 'escalation', 'on',
+                                   max_chars=150)
+        self.assertEqual(c.max_chars, 150)
+        self.assertTrue(c.format_version.startswith('default@'))
+
+    def test_the_rewrite_block_carries_the_score_and_sits_before_the_format(self):
+        text = brief_mod.build(taste=False, slot='contradiction', max_chars=180, rewrite={
+            'mode': 'waitlist', 'title': '原标题', 'outline': '原来的事。', 'score': 5, 'notes': '缺前置事件'})
+        self.assertIn('作者打分：5 / 10', text)
+        self.assertIn('以作者意见为准', text)
+        self.assertIn('缺前置事件', text)
+        self.assertLess(text.index('这一篇是重写'), text.index('## 输出格式'))
+
+
+class PerSlotCeiling(unittest.TestCase):
+    def test_every_slot_gets_one_ceiling_inside_the_range(self):
+        import random
+        import run_round
+        caps = run_round.draw_max_chars(['a', 'b', 'c'], 120, 300, random.Random(1))
+        self.assertEqual(set(caps), {'a', 'b', 'c'})
+        self.assertTrue(all(120 <= v <= 300 for v in caps.values()))
+
+    def test_a_bad_range_is_refused(self):
+        import random
+        import run_round
+        for lo, hi in ((300, 100), (0, 100), (100, store.MAX_PROSE_CHARS + 1)):
+            with self.assertRaises(ValueError, msg=(lo, hi)):
+                run_round.draw_max_chars(['a'], lo, hi, random.Random(1))
+
+    def test_the_ceiling_is_per_candidate_when_recorded(self):
+        c = store.Candidate(id='c-0005', round='r-test', slot='consequence', model='kimi',
+                            taste_context='on', title='T', outline='一' * 250, max_chars=300)
+        self.assertFalse(c.over_limit())
+        self.assertEqual(c.ceiling(), 300)
+
+
+class ScoresAndText(TempStore):
+    def test_score_bands_map_to_destinations(self):
+        f = store.verdict_for_score
+        self.assertEqual(f(0, has_notes=True), 'discarded')
+        self.assertEqual(f(3, has_notes=False), 'discarded')
+        self.assertEqual(f(4, has_notes=True), 'shortlisted')
+        self.assertEqual(f(7, has_notes=True), 'shortlisted')
+        self.assertEqual(f(8, has_notes=False), 'selected')
+        self.assertEqual(f(10, has_notes=True), 'selected_with_notes')
+        for bad in (-1, 11, 5.5, True):
+            with self.assertRaises(ValueError, msg=bad):
+                f(bad, has_notes=False)
+
+    def test_a_discard_with_only_a_note_is_accepted(self):
+        # QC's feedback lives in the text box; the reason chips are shortcuts beside it.
+        c = store.decide(self.make(), 'discarded', notes='像儿童动画', now=NOW)
+        self.assertEqual((c.verdict, c.reason, c.notes), ('discarded', None, '像儿童动画'))
+
+    def test_several_reasons_survive_and_the_first_stays_primary(self):
+        c = store.decide(self.make(), 'discarded', reasons=['cringe', 'incoherent'],
+                         notes='无聊 很尬 没有因果关系', score=2, now=NOW)
+        back = store.read(c.path())
+        self.assertEqual((back.reasons, back.reason, back.score), (['cringe', 'incoherent'], 'cringe', 2))
+
+    def test_a_score_out_of_range_is_refused(self):
+        with self.assertRaises(ValueError):
+            store.decide(self.make(), 'selected', score=12, now=NOW)
+
+    def test_a_file_from_before_multi_select_reads_its_reason_as_a_list(self):
+        c = store.decide(self.make(), 'discarded', reason='bland', now=NOW)
+        p = c.path()
+        p.write_text(re.sub(r'^reasons: .*\n', '', p.read_text(encoding='utf-8'), flags=re.M),
+                     encoding='utf-8', newline='\n')
+        self.assertEqual(store.read(p).reasons, ['bland'])
+
+
+class Rewrites(TempStore):
+    def setUp(self):
+        super().setUp()
+        self.calls = []
+
+    def fake_call(self, model, text, dry):
+        self.calls.append((model, text))
+        return json.dumps({'title': '重写', 'outline': '改过的事。', 'cast': ['haide'], 'kind': 'memory'},
+                          ensure_ascii=False), None
+
+    def rewrite(self, parent, mode, round_id):
+        import rewrite
+        import run_round
+        return rewrite.run(parent, mode, round_id=round_id, call=self.fake_call,
+                           to_candidate=run_round.to_candidate, now=NOW)
+
+    def test_a_waitlist_rewrite_goes_to_the_same_model_with_qcs_notes(self):
+        p = store.decide(self.make(), 'shortlisted', notes='好在温馨，缺前置事件', score=5, now=NOW)
+        child, sha = self.rewrite(p, 'waitlist', 'r-next')
+        model, text = self.calls[0]
+        self.assertEqual(model, 'codex')
+        self.assertIn('好在温馨，缺前置事件', text)
+        self.assertIn('原来的事。', text)
+        self.assertEqual((child.model, child.slot, child.parent, child.rewrite), ('codex', 'contradiction', p.id, 'waitlist'))
+        self.assertEqual(len(sha), 64)
+        back = store.find(p.id)
+        self.assertEqual((back.rewritten_as, back.revisit_count, child.revisit_count), (child.id, 1, 1))
+
+    def test_a_rewritten_parent_leaves_the_pool(self):
+        p = store.decide(self.make(), 'shortlisted', notes='n', now=NOW)
+        self.rewrite(p, 'waitlist', 'r-next')
+        self.assertNotIn(p.id, [c.id for c in store.shortlist_pool()])
+
+    def test_a_lineage_retires_after_three_rewrites(self):
+        c = store.decide(self.make(), 'shortlisted', notes='n', now=NOW)
+        for i in range(store.MAX_REVISITS):
+            child, _ = self.rewrite(c, 'waitlist', f'r-{i}')
+            c = store.decide(child, 'shortlisted', notes='还是差一点', score=5, now=NOW)
+        child, sha = self.rewrite(c, 'waitlist', 'r-last')
+        self.assertEqual((child, sha), (None, None))
+        self.assertEqual(len(self.calls), store.MAX_REVISITS)
+        back = store.find(c.id)
+        self.assertEqual((back.verdict, back.reason), ('discarded', 'never_chosen'))
+
+    def test_a_revise_rewrite_stays_in_its_round_and_spends_no_waitlist_budget(self):
+        p = store.decide(self.make(round='2026-09-10-r01'), 'selected_with_notes', notes='把结尾收短', score=8, now=NOW)
+        child, _ = self.rewrite(p, 'revise', p.round)
+        self.assertEqual((child.round, child.rewrite, child.revisit_count), (p.round, 'revise', 0))
+        self.assertEqual(store.find(p.id).revisit_count, 0)
+
+    def test_qcs_ceiling_override_reaches_the_rewrite(self):
+        p = store.decide(self.make(rewrite_max_chars=300), 'shortlisted', notes='上限提升到 300 字', now=NOW)
+        child, _ = self.rewrite(p, 'waitlist', 'r-next')
+        self.assertIn('不超过 300 字', self.calls[0][1])
+        self.assertEqual(child.max_chars, 300)
+
+    def test_a_model_failure_leaves_the_parent_untouched(self):
+        import rewrite
+        import run_round
+        p = store.decide(self.make(), 'shortlisted', notes='n', now=NOW)
+        with self.assertRaises(RuntimeError):
+            rewrite.run(p, 'waitlist', round_id='r-next', call=lambda m, t, d: ('', 'Timeout'),
+                        to_candidate=run_round.to_candidate, now=NOW)
+        back = store.find(p.id)
+        self.assertEqual((back.revisit_count, back.rewritten_as), (0, None))
+
+    def test_rewrites_stay_out_of_baseline_stats(self):
+        p = store.decide(self.make(round='2026-09-10-r01'), 'shortlisted', notes='n', now=NOW)
+        child, _ = self.rewrite(p, 'revise', p.round)
+        store.decide(child, 'selected', score=9, now=NOW)
+        row = store.stats(p.round)['codex']
+        self.assertEqual((row['shortlisted'], row['selected']), (1, 0))
+
+
+class DryRound(TempStore):
+    def test_a_dry_round_shares_one_ceiling_per_slot_and_rewrites_the_waitlist(self):
+        import run_round
+        parent = self.make(id='c-aaaa', round='2026-01-01-r01', slot='escalation', model='kimi')
+        store.decide(parent, 'shortlisted', notes='缺前置事件', score=5, now=NOW)
+        meta = run_round.run(dry=True, taste=False, min_chars=120, max_chars=180, seed=7, log=lambda s: None)
+        cands = store.load_round(meta['round'])
+        fresh = [c for c in cands if not c.rewrite]
+        self.assertEqual(len(fresh), len(run_round.BASE_SLOTS) * len(run_round.MODEL_ORDER) + 1)
+        for slot in run_round.BASE_SLOTS + ['expansion']:
+            caps = {c.max_chars for c in fresh if c.slot == slot}
+            self.assertEqual(len(caps), 1, slot)
+            self.assertEqual(caps.pop(), meta['max_chars'][slot])
+            self.assertTrue(120 <= meta['max_chars'][slot] <= 180)
+        rewrites = [c for c in cands if c.rewrite == 'waitlist']
+        self.assertEqual([(c.parent, c.model) for c in rewrites], [('c-aaaa', 'kimi')])
+        self.assertEqual(store.find('c-aaaa').rewritten_as, rewrites[0].id)
+        self.assertEqual(meta['waitlist_rewrites'][0]['parent'], 'c-aaaa')
 
 
 if __name__ == '__main__':

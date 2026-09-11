@@ -100,7 +100,7 @@ Ask QC to approve all, approve selected rule IDs, revise, or reject. Questions a
 Update all affected artifacts in one pass:
 
 1. `references/taste-rules.yaml` for canonical structured state;
-2. `references/taste-profile.md` only when application behavior changes;
+2. the domain files under `references/taste/` only when application behavior changes — in both languages, then `python tools/taste_sync.py stamp <part>`. The rule's scope decides the file: `story`, `character`, `prose`, `continuity` → `story`; `visual` → `image`; `story_visual` → `story`, and check `image`; `revision` or anything true of every domain → `_shared`; storyboard and video scopes → `storyboard` and `video`;
 3. `references/evidence-index.md` for new provenance and counterexamples;
 4. version and `evidence_through` fields;
 5. `consumed_records` — for every record read in this run, write its current path, sha256

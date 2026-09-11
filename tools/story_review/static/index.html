@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>故事评审 · QC Kindergarten</title>
+    <script>
+      // Runs before the stylesheets so a dark page never flashes light first.
+      (function () {
+        var root = document.documentElement;
+        try {
+          var theme = JSON.parse(localStorage.getItem('story-review:theme') || 'null');
+          root.dataset.theme = theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          if (JSON.parse(localStorage.getItem('story-review:lang') || 'null') === 'en') root.lang = 'en';
+        } catch (e) {
+          root.dataset.theme = 'light';
+        }
+      })();
+    </script>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/site/global.css" />
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body data-view="review">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <strong data-i18n="brand">故事评审</strong>
+          <span id="mode" class="mode">连接中</span>
+          <span class="toggles">
+            <button id="lang" class="toggle" type="button">EN</button>
+            <button id="theme" class="toggle" type="button" aria-pressed="false">☾</button>
+          </span>
+        </div>
+        <nav class="views" data-i18n-aria="viewsAria" aria-label="切换页面">
+          <a class="view-link on" href="#review" data-view="review" data-i18n="viewReview">评审</a>
+          <a class="view-link" href="#taste" data-view="taste" data-i18n="viewTaste">创作偏好</a>
+        </nav>
+        <nav id="filters" class="filters review-only" data-i18n-aria="filtersAria" aria-label="按去向筛选"></nav>
+        <span id="progress" class="progress review-only"></span>
+        <span id="trstatus" class="trstatus review-only" role="status" hidden></span>
+        <button id="arrivals" class="arrivals review-only" type="button" hidden></button>
+        <form id="generate" class="generate review-only">
+          <label class="range">
+            <span data-i18n="capLabel">字数上限</span>
+            <input
+              name="min"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              data-i18n-aria="capMinAria"
+              aria-label="字数上限的最小值"
+              required
+            />
+            <span aria-hidden="true">–</span>
+            <input
+              name="max"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              data-i18n-aria="capMaxAria"
+              aria-label="字数上限的最大值"
+              required
+            />
+            <span data-i18n="chars">字</span>
+          </label>
+          <button class="btn" type="submit" data-i18n="generate">生成下一轮</button>
+          <span id="blocked" class="blocked" aria-live="polite"></span>
+        </form>
+      </div>
+      <div id="joblog" class="joblog review-only" hidden>
+        <div class="joblog-inner">
+          <div class="joblog-head">
+            <span class="joblog-title"></span>
+            <button type="button" class="joblog-close" data-i18n="hideLog" data-i18n-aria="hideLogAria">收起</button>
+          </div>
+          <pre></pre>
+        </div>
+      </div>
+    </header>
+
+    <p id="offline" class="offline" role="status" hidden></p>
+    <p id="kbd-help" class="kbd-help review-only"></p>
+    <main id="feed" class="feed review-only"></main>
+    <main id="taste" class="taste taste-only"></main>
+
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>

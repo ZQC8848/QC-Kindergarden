@@ -6,6 +6,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "website", "run", "dev", "--", "--port", "4321", "--host", "127.0.0.1"],
       "port": 4321
+    },
+    {
+      "name": "story-review",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/story_review/server.py", "--no-open", "--port", "4388"],
+      "port": 4388
+    },
+    {
+      "name": "story-review-dry-run",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/story_review/server.py", "--dry-run", "--no-open", "--port", "4388"],
+      "port": 4388
     }
   ]
 }
