@@ -32,6 +32,7 @@ import datetime as dt
 import json
 import random
 import sys
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -43,6 +44,12 @@ from adapters import ADAPTERS, parse_outlines
 
 MODEL_ORDER = ['claude', 'codex', 'kimi', 'deepseek']
 BASE_SLOTS = ['consequence', 'contradiction', 'escalation', 'transposition']
+
+# How many calls one model may have in flight. Every model works through its own queue at
+# the same time, so a slow max-effort CLI call never holds back a fast HTTP model's next
+# story; within one model the limit keeps a subscription or an API tier from being flooded.
+# Four is the peak each model already reached in earlier rounds without a failure.
+PER_MODEL_CONCURRENCY = 4
 
 # Candidate attributes a format field lands in directly. Anything else the format asks for
 # is kept in Candidate.extra, so adding a field to the format never needs a change here.
@@ -155,7 +162,8 @@ def draw_max_chars(slots: list[str], lo: int, hi: int, rng: random.Random) -> di
 def run(*, models: list[str] | None = None, slots: list[str] | None = None, expansion: bool = True,
         taste: bool = True, dry: bool = False, min_chars: int = store.MAX_OUTLINE_CHARS,
         max_chars: int = store.MAX_OUTLINE_CHARS, fmt: str = brief_mod.DEFAULT_FORMAT,
-        waitlist: bool = True, seed: int | None = None, log=print) -> dict:
+        waitlist: bool = True, seed: int | None = None, per_model: int = PER_MODEL_CONCURRENCY,
+        log=print) -> dict:
     """Run one round and return its round.json.
 
     Raises ValueError for bad arguments and RuntimeError when a model the baseline needs
@@ -168,6 +176,8 @@ def run(*, models: list[str] | None = None, slots: list[str] | None = None, expa
     bad = [s for s in slots if s not in BASE_SLOTS]
     if bad:
         raise ValueError(f'unknown slot(s): {", ".join(bad)}; expected {", ".join(BASE_SLOTS)}')
+    if isinstance(per_model, bool) or not isinstance(per_model, int) or per_model < 1:
+        raise ValueError(f'per_model must be a positive integer; got {per_model!r}')
 
     spec = brief_mod.load_format(fmt)
     all_slots = slots + (['expansion'] if expansion else [])
@@ -211,21 +221,28 @@ def run(*, models: list[str] | None = None, slots: list[str] | None = None, expa
         + (f' + expansion:{expansion_model}' if expansion_model else '') + ')'
         + (f' + {rewrite_n} waitlist rewrite(s)' if rewrite_n else ''))
     log('[round] outline ceiling per slot: ' + '  '.join(f'{s}={caps[s]}' for s in all_slots))
+    log(f'[round] up to {per_model} call(s) in flight per model; the models run side by side')
     if skipped:
         log(f'[round] waitlist left for next round, model unavailable: {", ".join(skipped)}')
 
+    # One gate per model: jobs for different models never wait on each other.
+    gates = {model: threading.BoundedSemaphore(per_model) for _, model, _ in jobs}
+
     def work(job):
         kind, model, target = job
-        if kind == 'base':
-            return call(model, briefs[target], dry)
-        return rewrite_mod.run(target, 'waitlist', round_id=round_id, call=call,
-                               to_candidate=to_candidate, dry=dry, fmt=spec)
+        with gates[model]:
+            if kind == 'base':
+                return call(model, briefs[target], dry)
+            return rewrite_mod.run(target, 'waitlist', round_id=round_id, call=call,
+                                   to_candidate=to_candidate, dry=dry, fmt=spec)
 
     written, rewritten, retired, rewrite_meta = [], [], [], []
     failed = unparsed = 0
-    # One worker per job: almost all of the elapsed time is spent waiting on a model, and
-    # capping at four meant a single slow CLI call blocked three other models behind it.
-    with futures.ThreadPoolExecutor(max_workers=max(1, min(len(jobs), 8))) as pool:
+    # A thread per job, with the limit per model rather than per round. A shared cap of eight
+    # let slow max-effort CLI calls fill the pool while a fast HTTP model's next story sat
+    # queued behind them (2026-09-10). Now stories keep arriving at the pace of the quickest
+    # model, and each one is written the moment it arrives.
+    with futures.ThreadPoolExecutor(max_workers=max(1, len(jobs))) as pool:
         futs = {pool.submit(work, job): job for job in jobs}
         for fut in futures.as_completed(futs):
             kind, model, target = futs[fut]
@@ -274,6 +291,7 @@ def run(*, models: list[str] | None = None, slots: list[str] | None = None, expa
         'max_chars_range': [min_chars, max_chars],
         'max_chars': caps,
         'seed': seed,
+        'per_model_concurrency': per_model,
         # The identical-input claim, made checkable rather than asserted.
         'brief_sha256': {slot: brief_mod.sha256(text) for slot, text in briefs.items()},
         'calls': base_n,
@@ -312,6 +330,8 @@ def main() -> int:
     ap.add_argument('--format', default=brief_mod.DEFAULT_FORMAT, help='output format, formats/<name>.json')
     ap.add_argument('--no-waitlist', action='store_true', help='do not rewrite shortlisted candidates this round')
     ap.add_argument('--seed', type=int, default=None, help='fix the ceiling draw; the drawn values are recorded either way')
+    ap.add_argument('--per-model', type=int, default=PER_MODEL_CONCURRENCY,
+                    help='calls one model may have in flight at once; models always run side by side')
     args = ap.parse_args()
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -326,7 +346,7 @@ def main() -> int:
             slots=[s.strip() for s in args.slots.split(',') if s.strip()],
             expansion=not args.no_expansion, taste=not args.no_taste, dry=args.dry_run,
             min_chars=args.min_chars, max_chars=args.max_chars, fmt=args.format,
-            waitlist=not args.no_waitlist, seed=args.seed,
+            waitlist=not args.no_waitlist, seed=args.seed, per_model=args.per_model,
             log=lambda line: print(line, flush=True))
     except (ValueError, RuntimeError) as exc:
         sys.exit(f'[round] {exc}')

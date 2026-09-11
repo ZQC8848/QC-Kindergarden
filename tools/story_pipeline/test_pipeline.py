@@ -581,6 +581,65 @@ class DryRound(TempStore):
         self.assertEqual(meta['waitlist_rewrites'][0]['parent'], 'c-aaaa')
 
 
+class Streaming(TempStore):
+    def test_every_model_works_its_own_queue_within_its_limit(self):
+        import threading
+        import time
+        import run_round
+        lock = threading.Lock()
+        inflight, peak = {}, {}
+        peak_total = [0]
+
+        def slow(model, text, dry):
+            with lock:
+                inflight[model] = inflight.get(model, 0) + 1
+                peak[model] = max(peak.get(model, 0), inflight[model])
+                peak_total[0] = max(peak_total[0], sum(inflight.values()))
+            time.sleep(0.05)
+            with lock:
+                inflight[model] -= 1
+            return run_round.STUB, None
+
+        saved = run_round.call
+        run_round.call = slow
+        try:
+            meta = run_round.run(dry=True, taste=False, per_model=2, seed=1, log=lambda s: None)
+        finally:
+            run_round.call = saved
+        self.assertEqual(meta['written'], len(run_round.BASE_SLOTS) * len(run_round.MODEL_ORDER) + 1)
+        self.assertLessEqual(max(peak.values()), 2)
+        self.assertGreater(peak_total[0], 2)   # the models ran side by side, not one after another
+        self.assertEqual(meta['per_model_concurrency'], 2)
+
+    def test_a_bad_per_model_limit_is_refused(self):
+        import run_round
+        for bad in (0, -1, True, 1.5):
+            with self.assertRaises(ValueError, msg=bad):
+                run_round.run(dry=True, taste=False, per_model=bad, log=lambda s: None)
+
+    def test_writes_leave_no_temp_files_and_a_broken_file_does_not_hide_the_round(self):
+        import contextlib
+        import io
+        good = self.make(round='r-io')
+        (store.CANDIDATES / 'r-io' / 'c-dead.md').write_text('half a file', encoding='utf-8')
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            ids = [c.id for c in store.load_round('r-io')]
+        self.assertEqual(ids, [good.id])
+        self.assertIn('c-dead.md', err.getvalue())
+        self.assertEqual([p.name for p in (store.CANDIDATES / 'r-io').iterdir() if p.suffix == '.tmp'], [])
+
+
+class CodexIsolation(unittest.TestCase):
+    def test_codex_ignores_the_personal_config_and_pins_its_model(self):
+        import adapters
+        argv = adapters.CODEX_ARGV
+        for flag in ('--ignore-user-config', '--ephemeral', '--skip-git-repo-check'):
+            self.assertIn(flag, argv)
+        self.assertEqual(argv[argv.index('-m') + 1], adapters.CODEX_MODEL)
+        self.assertEqual(argv[-1], '-')   # the brief arrives on stdin, never as an argument
+
+
 if __name__ == '__main__':
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')

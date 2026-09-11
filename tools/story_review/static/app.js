@@ -686,7 +686,7 @@ function themeIcon(kind) {
 
 function applyStatic() {
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
-  document.title = t('pageTitle');
+  setTitle();
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', t(el.dataset.i18nAria));
   $('#kbd-help').replaceChildren(...t('keys').map((part) => (Array.isArray(part) ? h('kbd', {}, part[0]) : part)));
@@ -1685,6 +1685,13 @@ function updateArrivals() {
   const button = $('#arrivals');
   button.hidden = !arrivals.length;
   button.textContent = t('arrivals', { n: arrivals.length });
+  setTitle();
+}
+
+// The tab title counts stories that arrived and have not been looked at yet, so a round can
+// run in a background tab and still say when there is something new to read.
+function setTitle() {
+  document.title = (arrivals.length ? `(${arrivals.length}) ` : '') + t('pageTitle');
 }
 
 $('#arrivals').addEventListener('click', () => {

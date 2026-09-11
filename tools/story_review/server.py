@@ -263,6 +263,9 @@ class Review:
         self.job['log'].append(line)
         print(line, flush=True)
         self.emit('log', line)
+        # A round logs each story the moment it is written, so refresh the page now instead
+        # of waiting for the file watcher's next pass.
+        self.emit('changed', {})
 
     def signature(self) -> tuple:
         base = store.CANDIDATES

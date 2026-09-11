@@ -110,6 +110,16 @@ class Blind(Base):
         store.decide(b, 'discarded', notes='寡淡', score=2, now=NOW)
         self.assertEqual(set(self.review.stats(ROUND)['models']), {'kimi', 'codex'})
 
+    def test_every_log_line_also_refreshes_the_page(self):
+        import queue
+        q: queue.Queue = queue.Queue()
+        self.review.listeners.append(q)
+        self.review.log('  ok   某模型  escalation  120/200 字  标题')
+        events = []
+        while not q.empty():
+            events.append(q.get_nowait()[0])
+        self.assertEqual(events, ['log', 'changed'])
+
     def test_logs_and_rewrite_errors_are_scrubbed(self):
         self.review.log('  ok   kimi      escalation     120/200 字  标题')
         self.review.log('[round] 17 calls (4 models x 4 slots + expansion:DeepSeek)')

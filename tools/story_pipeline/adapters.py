@@ -152,6 +152,17 @@ def _cli_adapter(name: str, exe: str, argv: list[str]) -> Adapter:
     return Adapter(name, 'cli', generate, available)
 
 
+# codex exec, run as an isolated tool rather than as the user's own Codex (2026-09-10).
+# Without --ignore-user-config it read ~/.codex/config.toml, so the model was whatever that
+# machine's personal default happened to be. On one machine that was a model the ChatGPT
+# account cannot use, and every codex call in a round would have failed; the user's MCP
+# servers and plugins also came along into what should be a bare brief. The model is pinned
+# like every other adapter: gpt-5.6-sol is the top model this account lists. --ephemeral
+# keeps a round's calls out of the personal session history.
+CODEX_MODEL = 'gpt-5.6-sol'
+CODEX_ARGV = ['codex', 'exec', '--skip-git-repo-check', '--ignore-user-config', '--ephemeral',
+              '-m', CODEX_MODEL, '-c', 'model_reasoning_effort="high"', '-']
+
 # Every adapter is pinned to the strongest tier its account can reach, verified against
 # each provider's live catalogue on 2026-09-10 rather than assumed. The CLI invocations
 # are the ones most likely to drift: both tools iterate fast, so if a round starts failing
@@ -172,9 +183,8 @@ ADAPTERS = {
     'claude': _cli_adapter('claude', 'claude', ['claude', '-p', '--model', 'opus', '--effort', 'max']),
     # codex exec has no --effort flag; reasoning effort goes through a config override.
     # --skip-git-repo-check: the scratch directory is deliberately not a git repo.
-    'codex': _cli_adapter('codex', 'codex',
-                          ['codex', 'exec', '--skip-git-repo-check',
-                           '-c', 'model_reasoning_effort="high"', '-']),
+    # The flags are explained at CODEX_ARGV above.
+    'codex': _cli_adapter('codex', 'codex', CODEX_ARGV),
 }
 
 

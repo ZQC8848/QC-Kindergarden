@@ -28,6 +28,7 @@ python tools/story_pipeline/run_round.py --min-chars 120 --max-chars 300   # 每
 python tools/story_pipeline/run_round.py --models kimi,deepseek            # 只用其中几个
 python tools/story_pipeline/run_round.py --no-taste                        # 消融组
 python tools/story_pipeline/run_round.py --no-waitlist                     # 这一轮不带回候补
+python tools/story_pipeline/run_round.py --per-model 2                     # 每个模型最多同时几个调用（默认 4）
 python tools/story_pipeline/run_round.py --format default                  # formats/<name>.json
 
 # 3. 推到 Discord 评审频道（一篇一帖，不显示模型名；用评审站就不需要这一步）
@@ -134,6 +135,9 @@ python tools/story_pipeline/adapters.py --test deepseek
   Moonshot 分 `api.moonshot.cn`（国内）与 `api.moonshot.ai`（国际）两套独立体系，key 互不通用，模型 id 也不同；本项目用 `.ai`。
 - `claude` / `codex` — 子进程，用本机已登录的订阅态，不需要 key。两者都从 stdin 读 prompt。
   `codex exec` 需要 `--skip-git-repo-check`，因为临时目录故意不是 git 仓库。
+  Codex 固定用 `gpt-5.6-sol`，并加 `--ignore-user-config` 和 `--ephemeral`：不读个人的 `~/.codex/config.toml`，否则默认模型、MCP 服务和插件都会跟着各台电脑的个人设置变（有一台电脑的默认模型是 ChatGPT 账号用不了的，会让每一篇 Codex 调用都失败）；也不把每轮的调用写进个人会话历史。
+
+**并发与到达顺序。** 每个模型各自排队，最多同时 `PER_MODEL_CONCURRENCY = 4` 个调用，模型之间始终并行，每篇写完立刻落盘，评审站随即显示。之前是整轮共用 8 个并发，慢的 CLI 调用会占住名额，快模型后面的故事只能排队。2026-09-10 实测：Kimi、DeepSeek、Claude、Codex 各 4 个同时调用均无限流。
 
 ## 待定
 

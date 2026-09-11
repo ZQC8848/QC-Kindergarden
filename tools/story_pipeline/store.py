@@ -16,6 +16,9 @@ graduate to the public repo's stories/.
 from __future__ import annotations
 
 import json
+import os
+import threading
+import time
 import re
 import secrets
 import sys
@@ -172,6 +175,24 @@ def _yaml_scalar(v) -> str:
     return json.dumps(s, ensure_ascii=False) if re.search(r'[:#\n"\']|^\s|\s$', s) else s
 
 
+def _atomic_write(path: Path, text: str) -> None:
+    """Write through a temporary file and rename it into place.
+
+    The review site reads candidate files while a round is still writing them, one per
+    arriving story. A reader that caught a half-written file would see a candidate with no
+    frontmatter; a rename is all-or-nothing."""
+    tmp = path.with_name(f'.{path.name}.{os.getpid()}.{threading.get_ident()}.tmp')
+    tmp.write_text(text, encoding='utf-8', newline='\n')
+    for _ in range(50):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            # Windows refuses to replace a file that another thread has open for reading.
+            time.sleep(0.02)
+    os.replace(tmp, path)
+
+
 def write(c: Candidate) -> Path:
     p = c.path()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -191,7 +212,7 @@ def write(c: Candidate) -> Path:
     lines += ['---', '', c.outline.strip(), '']
     if c.parse_failed and c.raw:
         lines += ['<details><summary>无法解析的模型原始输出</summary>', '', '```', c.raw.strip()[:20000], '```', '', '</details>', '']
-    p.write_text('\n'.join(lines), encoding='utf-8', newline='\n')
+    _atomic_write(p, '\n'.join(lines))
     return p
 
 
@@ -258,7 +279,17 @@ def mark_published(c: Candidate, *, now: str) -> Candidate:
 
 def load_round(round_id: str) -> list[Candidate]:
     d = CANDIDATES / round_id
-    return [read(p) for p in sorted(d.glob('c-*.md'))] if d.exists() else []
+    if not d.exists():
+        return []
+    out = []
+    for p in sorted(d.glob('c-*.md')):
+        try:
+            out.append(read(p))
+        except (OSError, ValueError, TypeError) as exc:
+            # One unreadable file must not hide the rest of the round, or take the review page
+            # down with it. Writes are atomic, so this is a file broken by hand; say so.
+            print(f'[store] skipped unreadable candidate {p.name}: {exc}', file=sys.stderr)
+    return out
 
 
 def load_all() -> list[Candidate]:
@@ -352,7 +383,7 @@ def shortlist_pool() -> list[Candidate]:
 def write_round_meta(round_id: str, meta: dict) -> Path:
     p = CANDIDATES / round_id / 'round.json'
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    _atomic_write(p, json.dumps(meta, ensure_ascii=False, indent=2) + '\n')
     return p
 
 
